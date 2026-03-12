@@ -19,8 +19,8 @@
         }
         #wheel-container {
             position: relative;
-            width: 85vw;
-            max-width: 400px;
+            width: 80vw;
+            max-width: 380px;
             aspect-ratio: 1 / 1;
             margin: 0 auto;
         }
@@ -45,26 +45,23 @@
             display: flex;
             flex-direction: column;
         }
-        .history-item {
-            animation: slideIn 0.3s ease-out;
-        }
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* สไตล์ปุ่มกด */
+        .nav-btn.active { color: #f43f5e; }
+        .nav-btn.active div { background: rgba(244, 63, 94, 0.2); }
     </style>
 </head>
 <body class="flex flex-col">
-    <!-- Header -->
+
     <header class="p-4 text-center border-b border-white/10 bg-slate-950/50 backdrop-blur-md relative">
         <h1 class="text-3xl font-black italic tracking-tighter bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 bg-clip-text text-transparent uppercase">
             Party Wheel ✨
         </h1>
-        <p id="cloud-status" class="text-[10px] text-slate-500 italic mt-1 leading-none">กำลังเชื่อมต่อ...</p>
+        <p id="cloud-status" class="text-[10px] text-slate-500 italic mt-1 leading-none">กำลังเริ่มระบบ...</p>
         
-        <button id="mute-toggle" onclick="toggleMute()" class="absolute right-4 top-4 p-2 bg-white/5 rounded-full border border-white/10 active:scale-90 transition-all">
+        <button id="mute-toggle-btn" class="absolute right-4 top-4 p-2 bg-white/5 rounded-full border border-white/10 active:scale-90 transition-all">
             <svg id="sound-icon-on" class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
             </svg>
@@ -81,10 +78,10 @@
         <div id="tab-setup" class="tab-content space-y-4">
             <div class="bg-slate-900/60 p-5 rounded-3xl border border-white/5">
                 <h2 class="text-lg font-bold mb-3 flex items-center gap-2 text-rose-400">👥 รายชื่อนักดื่ม</h2>
-                <textarea id="names-input" class="w-full h-40 bg-black/40 border border-white/10 rounded-2xl p-4 text-white focus:ring-2 focus:ring-rose-500 focus:outline-none transition-all resize-none text-sm" placeholder="ใส่ชื่อ 1 คนต่อบรรทัด..."></textarea>
+                <textarea id="names-input" class="w-full h-44 bg-black/40 border border-white/10 rounded-2xl p-4 text-white focus:ring-2 focus:ring-rose-500 focus:outline-none transition-all resize-none text-sm" placeholder="ใส่ชื่อ 1 คนต่อบรรทัด..."></textarea>
                 <div class="mt-3 flex gap-2">
-                    <button onclick="saveToCloud()" class="flex-1 bg-indigo-600 active:bg-indigo-700 py-3 rounded-xl text-sm font-bold transition-all uppercase">💾 บันทึก</button>
-                    <button onclick="resetNames()" class="px-6 bg-slate-800 active:bg-slate-700 rounded-xl text-sm font-bold">ล้าง</button>
+                    <button id="save-btn" class="flex-1 bg-indigo-600 active:bg-indigo-700 py-3 rounded-xl text-sm font-bold transition-all uppercase">💾 บันทึก</button>
+                    <button id="clear-btn" class="px-6 bg-slate-800 active:bg-slate-700 rounded-xl text-sm font-bold">ล้าง</button>
                 </div>
             </div>
 
@@ -104,14 +101,8 @@
         <div id="tab-wheel" class="tab-content active items-center justify-center gap-6 py-4">
             <div id="wheel-container">
                 <div class="pointer-top">
-                    <svg width="40" height="70" viewBox="0 0 50 90" xmlns="http://www.w3.org/2000/svg">
-                        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-                            <feGaussianBlur in="SourceAlpha" stdDeviation="2" />
-                            <feOffset dx="0" dy="2" result="offsetblur" />
-                            <feComponentTransfer><feFuncA type="linear" slope="0.5" /></feComponentTransfer>
-                            <feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge>
-                        </filter>
-                        <path d="M5 10 Q5 0 25 0 Q45 0 45 10 V55 L35 65 V85 H15 V65 L5 55 Z" fill="#f43f5e" filter="url(#shadow)" />
+                    <svg width="40" height="70" viewBox="0 0 50 90">
+                        <path d="M5 10 Q5 0 25 0 Q45 0 45 10 V55 L35 65 V85 H15 V65 L5 55 Z" fill="#f43f5e" />
                         <rect x="10" y="20" width="30" height="25" rx="2" fill="white" opacity="0.2" />
                         <rect x="20" y="85" width="10" height="5" fill="#991b1b" />
                         <path d="M20 90 L30 90 L25 95 Z" fill="#991b1b" />
@@ -121,16 +112,16 @@
             </div>
 
             <div class="w-full max-w-[300px] flex flex-col gap-4">
-                <button id="spin-button" onclick="spinWheel()" class="w-full py-6 bg-gradient-to-r from-rose-600 to-pink-500 rounded-full font-black text-3xl uppercase tracking-widest shadow-[0_10px_40px_rgba(244,63,94,0.4)] active:scale-90 transition-all disabled:opacity-50">
+                <button id="spin-button" class="w-full py-6 bg-gradient-to-r from-rose-600 to-pink-500 rounded-full font-black text-3xl uppercase tracking-widest shadow-[0_10px_40px_rgba(244,63,94,0.4)] active:scale-90 transition-all disabled:opacity-50">
                     Spin!
                 </button>
 
                 <div class="flex items-center justify-between px-6 py-3 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-sm">
                     <span class="text-sm font-bold text-slate-300">ตัดชื่อคนโดนออก</span>
-                    <input type="checkbox" id="remove-mode" class="w-6 h-6 accent-rose-500 rounded-lg cursor-pointer">
+                    <input type="checkbox" id="remove-mode" class="w-6 h-6 accent-rose-500 rounded-lg">
                 </div>
 
-                <button id="reset-wheel-btn" onclick="restoreOriginalNames()" class="w-full py-3 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-2xl text-sm font-bold border border-white/5 active:scale-95 transition-all">
+                <button id="restore-btn" class="w-full py-3 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-2xl text-sm font-bold border border-white/5 active:scale-95 transition-all">
                     🔄 คืนค่ารายชื่อเดิม
                 </button>
             </div>
@@ -143,26 +134,30 @@
                 <div id="history-list" class="flex-1 space-y-3">
                     <p class="text-slate-600 text-center text-sm py-10">ยังไม่มีประวัติการสุ่ม</p>
                 </div>
-                <button onclick="clearHistory()" class="mt-6 w-full py-3 text-sm text-rose-400 font-bold border border-rose-500/20 rounded-2xl active:bg-rose-500/10">ล้างประวัติทั้งหมด</button>
+                <button id="clear-history-btn" class="mt-6 w-full py-3 text-sm text-rose-400 font-bold border border-rose-500/20 rounded-2xl active:bg-rose-500/10">ล้างประวัติทั้งหมด</button>
             </div>
         </div>
     </main>
 
-    <!-- Navigation -->
+    <!-- Bottom Navigation -->
     <nav class="bg-slate-950/80 backdrop-blur-xl border-t border-white/10 p-2 pb-6 flex justify-around items-center">
-        <button onclick="switchTab('setup')" id="nav-setup" class="flex flex-col items-center gap-1 p-2 text-slate-500">
-            <span class="text-xl">⚙️</span><span class="text-[10px] font-bold uppercase">ตั้งค่า</span>
+        <button id="nav-setup-btn" class="nav-btn flex flex-col items-center gap-1 p-2 text-slate-500">
+            <span class="text-xl">⚙️</span>
+            <span class="text-[10px] font-bold uppercase">ตั้งค่า</span>
         </button>
-        <button onclick="switchTab('wheel')" id="nav-wheel" class="flex flex-col items-center gap-1 p-2 text-rose-500">
-            <div class="bg-rose-500/20 p-3 rounded-2xl"><span class="text-2xl">🎡</span></div>
+        <button id="nav-wheel-btn" class="nav-btn active flex flex-col items-center gap-1 p-2">
+            <div class="p-3 rounded-2xl">
+                <span class="text-2xl">🎡</span>
+            </div>
             <span class="text-[10px] font-bold uppercase">วงล้อ</span>
         </button>
-        <button onclick="switchTab('history')" id="nav-history" class="flex flex-col items-center gap-1 p-2 text-slate-500">
-            <span class="text-xl">📜</span><span class="text-[10px] font-bold uppercase">ประวัติ</span>
+        <button id="nav-history-btn" class="nav-btn flex flex-col items-center gap-1 p-2 text-slate-500">
+            <span class="text-xl">📜</span>
+            <span class="text-[10px] font-bold uppercase">ประวัติ</span>
         </button>
     </nav>
 
-    <!-- Result Modal -->
+    <!-- Modal ผู้โชคดี -->
     <div id="result-modal" class="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
         <div class="max-w-xs w-full mx-4 bg-slate-900 p-8 rounded-[2.5rem] border border-white/10 text-center transform scale-75 transition-transform duration-300">
             <div class="text-rose-500 text-xs font-bold tracking-widest mb-2 uppercase">ผู้โชคดีคือ!</div>
@@ -170,9 +165,9 @@
             <div id="mission-box" class="mt-4 p-5 bg-white/5 rounded-3xl border border-amber-500/30">
                 <div class="text-amber-500 text-[10px] font-bold mb-1 uppercase tracking-widest">ภารกิจ:</div>
                 <div id="winner-mission" class="text-xl font-bold text-amber-400 italic">...</div>
-                <button id="ai-btn" onclick="askGemini()" class="mt-4 w-full py-2 bg-indigo-600/20 text-indigo-400 text-xs rounded-xl border border-indigo-500/30 transition-all">✨ ขอภารกิจป่วนๆ จาก AI</button>
+                <button id="ai-btn" class="mt-4 w-full py-2 bg-indigo-600/20 text-indigo-400 text-xs rounded-xl border border-indigo-500/30 transition-all">✨ ขอภารกิจป่วนๆ จาก AI</button>
             </div>
-            <button onclick="closeModal()" class="mt-8 w-full py-4 bg-white text-black rounded-2xl font-bold text-lg active:scale-95 transition-all">ไปต่อ!</button>
+            <button id="close-modal-btn" class="mt-8 w-full py-4 bg-white text-black rounded-2xl font-bold text-lg active:scale-95 transition-all">ไปต่อ!</button>
         </div>
     </div>
 
@@ -207,16 +202,44 @@
         let rotation = 0;
         let isSpinning = false;
         const colors = ['#f43f5e', '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#6366f1', '#06b6d4'];
-
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
-        window.toggleMute = () => {
+
+        // ฟังก์ชันจัดการ UI (ประกาศให้ปุ่มเข้าถึงได้)
+        const switchTab = (tabName) => {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active', 'text-rose-500');
+                btn.classList.add('text-slate-500');
+            });
+            
+            const activeNav = document.getElementById(`nav-${tabName}-btn`);
+            activeNav.classList.add('active', 'text-rose-500');
+            activeNav.classList.remove('text-slate-500');
+        };
+
+        const toggleMute = () => {
             isMuted = !isMuted;
             soundOnIcon.classList.toggle('hidden', isMuted);
             soundOffIcon.classList.toggle('hidden', !isMuted);
             if (!isMuted && audioCtx.state === 'suspended') audioCtx.resume();
         };
 
+        // ผูก Event Listeners กับปุ่มต่างๆ แทนการใช้ onclick ใน HTML
+        document.getElementById('nav-setup-btn').addEventListener('click', () => switchTab('setup'));
+        document.getElementById('nav-wheel-btn').addEventListener('click', () => switchTab('wheel'));
+        document.getElementById('nav-history-btn').addEventListener('click', () => switchTab('history'));
+        document.getElementById('mute-toggle-btn').addEventListener('click', toggleMute);
+        document.getElementById('save-btn').addEventListener('click', () => saveToCloud());
+        document.getElementById('clear-btn').addEventListener('click', () => { namesInput.value = ""; updateWheel(); });
+        document.getElementById('spin-button').addEventListener('click', () => spinWheel());
+        document.getElementById('restore-btn').addEventListener('click', () => restoreOriginalNames());
+        document.getElementById('clear-history-btn').addEventListener('click', () => { historyList.innerHTML = '<p class="text-slate-600 text-center text-sm py-10">ยังไม่มีประวัติการสุ่ม</p>'; });
+        document.getElementById('close-modal-btn').addEventListener('click', () => closeModal());
+        document.getElementById('ai-btn').addEventListener('click', () => askGemini());
+
+        // ระบบเสียง
         function playTick(freq = 800) {
             if (isMuted) return;
             try {
@@ -246,16 +269,7 @@
             } catch(e) {}
         }
 
-        window.switchTab = (tabName) => {
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.getElementById(`tab-${tabName}`).classList.add('active');
-            ['setup', 'wheel', 'history'].forEach(t => {
-                const btn = document.getElementById(`nav-${t}`);
-                btn.classList.toggle('text-rose-500', t === tabName);
-                btn.classList.toggle('text-slate-500', t !== tabName);
-            });
-        };
-
+        // ฐานข้อมูล
         const initAuth = async () => {
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                 await signInWithCustomToken(auth, __initial_auth_token);
@@ -273,6 +287,8 @@
                     if (snap.exists()) {
                         namesInput.value = snap.data().names.join('\n');
                         cloudStatus.textContent = "เชื่อมต่อระบบ Cloud แล้ว";
+                    } else {
+                        cloudStatus.textContent = "ยังไม่มีข้อมูลที่บันทึกไว้";
                     }
                 } catch (e) { cloudStatus.textContent = "โหมดออฟไลน์"; }
                 updateWheel();
@@ -281,7 +297,7 @@
 
         initAuth();
 
-        window.saveToCloud = async () => {
+        const saveToCloud = async () => {
             if (!user) return;
             const currentNames = namesInput.value.split('\n').filter(n => n.trim());
             cloudStatus.textContent = "กำลังบันทึก...";
@@ -293,7 +309,7 @@
             } catch (e) { cloudStatus.textContent = "บันทึกไม่สำเร็จ"; }
         };
 
-        window.restoreOriginalNames = async () => {
+        const restoreOriginalNames = async () => {
             if (!user || isSpinning) return;
             cloudStatus.textContent = "กำลังคืนค่ารายชื่อ...";
             const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'party_config', 'settings');
@@ -307,19 +323,18 @@
             } catch (e) {}
         };
 
-        window.updateWheel = () => {
+        // วงล้อ
+        const updateWheel = () => {
             names = namesInput.value.split('\n').map(n => n.trim()).filter(n => n !== "");
             draw();
         };
-
-        window.resetNames = () => { namesInput.value = ""; updateWheel(); };
 
         function draw() {
             const centerX = 500, centerY = 500, radius = 460;
             ctx.clearRect(0, 0, 1000, 1000);
             if (names.length === 0) {
                 ctx.fillStyle = "#1e293b"; ctx.beginPath(); ctx.arc(centerX, centerY, radius, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = "#475569"; ctx.textAlign = "center"; ctx.font = "bold 40px Kanit"; ctx.fillText("กรุณาคืนค่ารายชื่อเดิม", centerX, centerY);
+                ctx.fillStyle = "#475569"; ctx.textAlign = "center"; ctx.font = "bold 40px Kanit"; ctx.fillText("ใส่รายชื่อในหน้าตั้งค่า ⚙️", centerX, centerY);
                 return;
             }
             const slice = (Math.PI * 2) / names.length;
@@ -336,7 +351,7 @@
             ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 8; ctx.stroke();
         }
 
-        window.spinWheel = () => {
+        const spinWheel = () => {
             if (isSpinning || names.length === 0) return;
             isSpinning = true; spinBtn.disabled = true;
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -386,7 +401,7 @@
             throw new Error("Failed");
         }
 
-        window.askGemini = async () => {
+        const askGemini = async () => {
             const aiBtn = document.getElementById('ai-btn'); const winnerMission = document.getElementById('winner-mission');
             aiBtn.textContent = "🪄 กำลังคิดภารกิจ..."; aiBtn.disabled = true;
             try {
@@ -407,12 +422,13 @@
             list.prepend(div);
         }
 
-        window.clearHistory = () => { document.getElementById('history-list').innerHTML = '<p class="text-slate-600 text-center text-sm py-10">ยังไม่มีประวัติการสุ่ม</p>'; };
-        window.closeModal = () => {
+        const closeModal = () => {
             const m = document.getElementById('result-modal'); m.classList.remove('opacity-100'); m.querySelector('div').classList.add('scale-75');
             setTimeout(() => { m.classList.add('hidden'); updateWheel(); }, 300);
         };
+        
         namesInput.addEventListener('input', updateWheel);
+        updateWheel(); // วาดครั้งแรก
     </script>
 </body>
 </html>
