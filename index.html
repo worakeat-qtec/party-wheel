@@ -58,7 +58,7 @@
         <h1 class="text-3xl font-black italic tracking-tighter bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 bg-clip-text text-transparent uppercase">
             Party Wheel ✨
         </h1>
-        <p id="cloud-status" class="text-[10px] text-slate-500 italic mt-1 leading-none">พร้อมใช้งาน</p>
+        <p id="cloud-status" class="text-[10px] text-slate-500 italic mt-1 leading-none">พร้อมใช้งาน (โหมดปกติ)</p>
         
         <button id="mute-toggle-btn" class="absolute right-4 top-4 p-2 bg-white/5 rounded-full border border-white/10 active:scale-90 transition-all">
             <svg id="sound-icon-on" class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -75,14 +75,17 @@
         
         <!-- Tab 1: Setup -->
         <div id="tab-setup" class="tab-content space-y-4">
-            <div class="bg-slate-900/60 p-5 rounded-3xl border border-white/5">
+            <div class="bg-slate-900/60 p-5 rounded-3xl border border-white/5 shadow-xl">
                 <h2 class="text-lg font-bold mb-3 flex items-center gap-2 text-rose-400">👥 รายชื่อนักดื่ม</h2>
-                <textarea id="names-input" class="w-full h-44 bg-black/40 border border-white/10 rounded-2xl p-4 text-white focus:ring-2 focus:ring-rose-500 focus:outline-none transition-all resize-none text-sm" placeholder="ใส่ชื่อ 1 คนต่อบรรทัด..."></textarea>
+                <p class="text-[10px] text-slate-400 mb-2">พิมพ์ชื่อคนละ 1 บรรทัด วงล้อจะอัปเดตอัตโนมัติ</p>
+                <textarea id="names-input" class="w-full h-44 bg-black/40 border border-white/10 rounded-2xl p-4 text-white focus:ring-2 focus:ring-rose-500 focus:outline-none transition-all resize-none text-sm" placeholder="พิมพ์ชื่อที่นี่..."></textarea>
                 <div class="mt-3 flex gap-2">
-                    <button id="save-btn" class="flex-1 bg-indigo-600 active:bg-indigo-700 py-3 rounded-xl text-sm font-bold transition-all uppercase">💾 บันทึก</button>
-                    <button id="clear-btn" class="px-6 bg-slate-800 active:bg-slate-700 rounded-xl text-sm font-bold">ล้าง</button>
+                    <button id="save-btn" class="flex-1 bg-indigo-600 active:bg-indigo-700 py-3 rounded-xl text-sm font-bold transition-all uppercase shadow-lg shadow-indigo-900/20">💾 บันทึก Cloud</button>
+                    <button id="clear-btn" class="px-6 bg-slate-800 active:bg-slate-700 rounded-xl text-sm font-bold transition-all">ล้างชื่อ</button>
                 </div>
-                <p class="text-[10px] text-slate-500 mt-2">* หากอยู่บน GitHub ต้องใส่ Firebase Config เองถึงจะบันทึก Cloud ได้</p>
+                <div id="cloud-info" class="mt-3 p-3 bg-white/5 rounded-xl border border-white/5 text-[10px] text-slate-500 leading-relaxed">
+                    * ปุ่มบันทึก Cloud จะทำงานเมื่อคุณนำ Firebase Config จาก Google AI Studio มาใส่ในโค้ดเท่านั้น
+                </div>
             </div>
 
             <div class="bg-slate-900/60 p-5 rounded-3xl border border-white/5">
@@ -118,18 +121,18 @@
 
                 <div class="flex items-center justify-between px-6 py-3 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-sm">
                     <span class="text-sm font-bold text-slate-300">ตัดชื่อคนโดนออก</span>
-                    <input type="checkbox" id="remove-mode" class="w-6 h-6 accent-rose-500 rounded-lg">
+                    <input type="checkbox" id="remove-mode" class="w-6 h-6 accent-rose-500 rounded-lg cursor-pointer">
                 </div>
 
                 <button id="restore-btn" class="w-full py-3 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-2xl text-sm font-bold border border-white/5 active:scale-95 transition-all">
-                    🔄 คืนค่ารายชื่อเดิม
+                    🔄 คืนค่ารายชื่อล่าสุด
                 </button>
             </div>
         </div>
 
         <!-- Tab 3: History -->
         <div id="tab-history" class="tab-content">
-            <div class="bg-slate-900/60 p-5 rounded-3xl border border-white/5 min-h-[300px] flex flex-col">
+            <div class="bg-slate-900/60 p-5 rounded-3xl border border-white/5 min-h-[300px] flex flex-col shadow-2xl">
                 <h2 class="text-lg font-bold mb-4 flex items-center gap-2 text-indigo-400">📜 ประวัติรอบนี้</h2>
                 <div id="history-list" class="flex-1 space-y-3">
                     <p class="text-slate-600 text-center text-sm py-10">ยังไม่มีประวัติการสุ่ม</p>
@@ -145,7 +148,7 @@
             <span class="text-xl">⚙️</span>
             <span class="text-[10px] font-bold uppercase">ตั้งค่า</span>
         </button>
-        <button id="nav-wheel-btn" class="nav-btn active flex flex-col items-center gap-1 p-2">
+        <button id="nav-wheel-btn" class="nav-btn active flex flex-col items-center gap-1 p-2 text-rose-500">
             <div class="p-3 rounded-2xl">
                 <span class="text-2xl">🎡</span>
             </div>
@@ -160,14 +163,14 @@
     <!-- Modal ผู้โชคดี -->
     <div id="result-modal" class="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
         <div class="max-w-xs w-full mx-4 bg-slate-900 p-8 rounded-[2.5rem] border border-white/10 text-center transform scale-75 transition-transform duration-300 shadow-2xl">
-            <div class="text-rose-500 text-xs font-bold tracking-widest mb-2 uppercase">ผู้โชคดีคือ!</div>
-            <div id="winner-name" class="text-4xl font-black text-white mb-4 break-words leading-tight">?</div>
+            <div class="text-rose-500 text-xs font-bold tracking-widest mb-2 uppercase leading-none">ผู้โชคดีคือ!</div>
+            <div id="winner-name" class="text-5xl font-black text-white mb-4 break-words leading-tight">?</div>
             <div id="mission-box" class="mt-4 p-5 bg-white/5 rounded-3xl border border-amber-500/30">
                 <div class="text-amber-500 text-[10px] font-bold mb-1 uppercase tracking-widest">ภารกิจ:</div>
                 <div id="winner-mission" class="text-xl font-bold text-amber-400 italic">...</div>
-                <button id="ai-btn" class="mt-4 w-full py-2 bg-indigo-600/20 text-indigo-400 text-xs rounded-xl border border-indigo-500/30 transition-all">✨ ขอภารกิจป่วนๆ จาก AI</button>
+                <button id="ai-btn" class="mt-4 w-full py-2 bg-indigo-600/20 text-indigo-400 text-[10px] rounded-xl border border-indigo-500/30 transition-all font-bold">✨ ขอภารกิจป่วนจาก AI</button>
             </div>
-            <button id="close-modal-btn" class="mt-8 w-full py-4 bg-white text-black rounded-2xl font-bold text-lg active:scale-95 transition-all">ไปต่อ!</button>
+            <button id="close-modal-btn" class="mt-8 w-full py-4 bg-white text-black rounded-2xl font-bold text-lg active:scale-95 transition-all shadow-xl">ไปต่อ!</button>
         </div>
     </div>
 
@@ -176,53 +179,51 @@
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // *** เปลี่ยนเป็น API Key ของคุณจาก Google AI Studio ***
+        // *** ใส่ API Key ของคุณที่นี่ ***
         const apiKey = ""; 
 
-        // ตรวจสอบ Config ของ Firebase อย่างปลอดภัย
-        let firebaseApp, auth, db, user;
+        // ตัวแปรควบคุมระบบ
+        let db, auth, user;
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'party-wheel-prod';
         const cloudStatus = document.getElementById('cloud-status');
 
-        try {
-            if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-                const firebaseConfig = JSON.parse(__firebase_config);
-                firebaseApp = initializeApp(firebaseConfig);
-                auth = getAuth(firebaseApp);
-                db = getFirestore(firebaseApp);
-                
-                const initAuth = async () => {
+        // ฟังก์ชันเริ่มระบบ Firebase แบบปลอดภัย
+        const startFirebase = async () => {
+            try {
+                if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                    const config = JSON.parse(__firebase_config);
+                    const app = initializeApp(config);
+                    auth = getAuth(app);
+                    db = getFirestore(app);
+
                     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                         await signInWithCustomToken(auth, __initial_auth_token);
                     } else {
                         await signInAnonymously(auth);
                     }
-                };
-                initAuth();
 
-                onAuthStateChanged(auth, async (u) => {
-                    user = u;
-                    if (user) {
-                        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'party_config', 'settings');
-                        try {
+                    onAuthStateChanged(auth, async (u) => {
+                        user = u;
+                        if (user) {
+                            cloudStatus.textContent = "เชื่อมต่อ Cloud สำเร็จ ✅";
+                            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'party_config', 'settings');
                             const snap = await getDoc(docRef);
                             if (snap.exists()) {
-                                document.getElementById('names-input').value = snap.data().names.join('\n');
+                                namesInput.value = snap.data().names.join('\n');
                                 updateWheel();
                             }
-                            cloudStatus.textContent = "เชื่อมต่อระบบ Cloud แล้ว ✅";
-                        } catch (e) { console.error(e); }
-                    }
-                });
-            } else {
-                cloudStatus.textContent = "โหมดเล่นในเครื่อง (ไม่ได้ต่อ Cloud)";
+                        }
+                    });
+                } else {
+                    cloudStatus.textContent = "โหมดเล่นในเครื่อง 🏠";
+                }
+            } catch (e) {
+                console.warn("Firebase Config missing or invalid.");
+                cloudStatus.textContent = "โหมดเล่นในเครื่อง 🏠";
             }
-        } catch (e) {
-            console.warn("Firebase setup failed, continuing in local mode.", e);
-            cloudStatus.textContent = "โหมดเล่นในเครื่อง";
-        }
+        };
 
-        // --- UI Logic (ทำงานทันทีไม่รอ Cloud) ---
+        // --- ระบบ UI (ทำงานทันที) ---
         const canvas = document.getElementById('wheel-canvas');
         const ctx = canvas.getContext('2d');
         const namesInput = document.getElementById('names-input');
@@ -252,7 +253,7 @@
             activeNav.classList.remove('text-slate-500');
         };
 
-        // Attach listeners ทันที
+        // ผูก Event Listeners ทันที
         document.getElementById('nav-setup-btn').onclick = () => switchTab('setup');
         document.getElementById('nav-wheel-btn').onclick = () => switchTab('wheel');
         document.getElementById('nav-history-btn').onclick = () => switchTab('history');
@@ -272,7 +273,7 @@
         document.getElementById('clear-btn').onclick = () => { namesInput.value = ""; updateWheel(); };
         document.getElementById('save-btn').onclick = async () => {
             if (!db || !user) {
-                alert("ระบบ Cloud ไม่พร้อมใช้งานในโหมดนี้ (ต้องตั้งค่า Firebase Config)");
+                alert("ระบบ Cloud ยังไม่พร้อม (ต้องตั้งค่า Firebase Config ในโค้ดก่อน)");
                 return;
             }
             cloudStatus.textContent = "กำลังบันทึก...";
@@ -281,7 +282,7 @@
                     names: namesInput.value.split('\n').filter(n => n.trim()),
                     updatedAt: new Date()
                 });
-                cloudStatus.textContent = "บันทึกเรียบร้อย! ✅";
+                cloudStatus.textContent = "บันทึก Cloud สำเร็จ ✅";
             } catch (e) { cloudStatus.textContent = "บันทึกไม่สำเร็จ"; }
         };
 
@@ -293,6 +294,29 @@
                 updateWheel();
             }
         };
+
+        // ระบบวาดและหมุน
+        function draw() {
+            const centerX = 500, centerY = 500, radius = 460;
+            ctx.clearRect(0, 0, 1000, 1000);
+            if (names.length === 0) {
+                ctx.fillStyle = "#1e293b"; ctx.beginPath(); ctx.arc(centerX, centerY, radius, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#475569"; ctx.textAlign = "center"; ctx.font = "bold 40px Kanit"; ctx.fillText("ใส่รายชื่อในหน้าตั้งค่า ⚙️", centerX, centerY);
+                return;
+            }
+            const slice = (Math.PI * 2) / names.length;
+            names.forEach((name, i) => {
+                const start = i * slice + rotation;
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.beginPath(); ctx.moveTo(centerX, centerY); ctx.arc(centerX, centerY, radius, start, start + slice); ctx.fill();
+                ctx.save(); ctx.translate(centerX, centerY); ctx.rotate(start + slice / 2); ctx.textAlign = "right"; ctx.fillStyle = "#fff";
+                let fontSize = names.length > 20 ? 28 : (names.length > 10 ? 44 : 68);
+                ctx.font = `900 ${fontSize}px Kanit`; ctx.shadowBlur = 10; ctx.shadowColor = "rgba(0,0,0,0.5)";
+                ctx.fillText(name.substring(0, 12), radius - 40, fontSize/3); ctx.restore();
+            });
+            ctx.fillStyle = "#020617"; ctx.beginPath(); ctx.arc(centerX, centerY, 50, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 8; ctx.stroke();
+        }
 
         spinBtn.onclick = () => {
             if (isSpinning || names.length === 0) return;
@@ -330,28 +354,6 @@
             requestAnimationFrame(animate);
         };
 
-        function draw() {
-            const centerX = 500, centerY = 500, radius = 460;
-            ctx.clearRect(0, 0, 1000, 1000);
-            if (names.length === 0) {
-                ctx.fillStyle = "#1e293b"; ctx.beginPath(); ctx.arc(centerX, centerY, radius, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = "#475569"; ctx.textAlign = "center"; ctx.font = "bold 40px Kanit"; ctx.fillText("ใส่รายชื่อในหน้าตั้งค่า ⚙️", centerX, centerY);
-                return;
-            }
-            const slice = (Math.PI * 2) / names.length;
-            names.forEach((name, i) => {
-                const start = i * slice + rotation;
-                ctx.fillStyle = colors[i % colors.length];
-                ctx.beginPath(); ctx.moveTo(centerX, centerY); ctx.arc(centerX, centerY, radius, start, start + slice); ctx.fill();
-                ctx.save(); ctx.translate(centerX, centerY); ctx.rotate(start + slice / 2); ctx.textAlign = "right"; ctx.fillStyle = "#fff";
-                let fontSize = names.length > 20 ? 28 : (names.length > 10 ? 44 : 68);
-                ctx.font = `900 ${fontSize}px Kanit`; ctx.shadowBlur = 10; ctx.shadowColor = "rgba(0,0,0,0.5)";
-                ctx.fillText(name.substring(0, 12), radius - 40, fontSize/3); ctx.restore();
-            });
-            ctx.fillStyle = "#020617"; ctx.beginPath(); ctx.arc(centerX, centerY, 50, 0, Math.PI * 2); ctx.fill();
-            ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 8; ctx.stroke();
-        }
-
         function showResult(name, index) {
             const modal = document.getElementById('result-modal');
             document.getElementById('winner-name').textContent = name;
@@ -376,7 +378,8 @@
         };
 
         document.getElementById('ai-btn').onclick = async () => {
-            const btn = document.getElementById('ai-btn'); btn.textContent = "🪄 กำลังคิด..."; btn.disabled = true;
+            if (!apiKey) { alert("กรุณาใส่ API Key ของ Gemini ในโค้ดก่อนใช้งาน AI ✨"); return; }
+            const btn = document.getElementById('ai-btn'); btn.textContent = "🪄 AI กำลังคิด..."; btn.disabled = true;
             try {
                 const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -385,11 +388,13 @@
                 const res = await r.json(); const aiText = res.candidates?.[0]?.content?.parts?.[0]?.text;
                 if (aiText) document.getElementById('winner-mission').textContent = aiText.trim();
             } catch (e) { document.getElementById('winner-mission').textContent = "AI เมาค้างอยู่..."; }
-            finally { btn.textContent = "✨ ขอภารกิจป่วนๆ จาก AI"; btn.disabled = false; }
+            finally { btn.textContent = "✨ ขอภารกิจป่วนจาก AI"; btn.disabled = false; }
         };
 
         document.getElementById('clear-history-btn').onclick = () => { historyList.innerHTML = '<p class="text-slate-600 text-center text-sm py-10">ยังไม่มีประวัติการสุ่ม</p>'; };
         
+        // เริ่มต้นระบบ
+        startFirebase();
         updateWheel();
     </script>
 </body>
