@@ -48,7 +48,6 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* สไตล์ปุ่มกด */
         .nav-btn.active { color: #f43f5e; }
         .nav-btn.active div { background: rgba(244, 63, 94, 0.2); }
     </style>
@@ -59,7 +58,7 @@
         <h1 class="text-3xl font-black italic tracking-tighter bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 bg-clip-text text-transparent uppercase">
             Party Wheel ✨
         </h1>
-        <p id="cloud-status" class="text-[10px] text-slate-500 italic mt-1 leading-none">กำลังเริ่มระบบ...</p>
+        <p id="cloud-status" class="text-[10px] text-slate-500 italic mt-1 leading-none">พร้อมใช้งาน</p>
         
         <button id="mute-toggle-btn" class="absolute right-4 top-4 p-2 bg-white/5 rounded-full border border-white/10 active:scale-90 transition-all">
             <svg id="sound-icon-on" class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -83,6 +82,7 @@
                     <button id="save-btn" class="flex-1 bg-indigo-600 active:bg-indigo-700 py-3 rounded-xl text-sm font-bold transition-all uppercase">💾 บันทึก</button>
                     <button id="clear-btn" class="px-6 bg-slate-800 active:bg-slate-700 rounded-xl text-sm font-bold">ล้าง</button>
                 </div>
+                <p class="text-[10px] text-slate-500 mt-2">* หากอยู่บน GitHub ต้องใส่ Firebase Config เองถึงจะบันทึก Cloud ได้</p>
             </div>
 
             <div class="bg-slate-900/60 p-5 rounded-3xl border border-white/5">
@@ -159,7 +159,7 @@
 
     <!-- Modal ผู้โชคดี -->
     <div id="result-modal" class="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
-        <div class="max-w-xs w-full mx-4 bg-slate-900 p-8 rounded-[2.5rem] border border-white/10 text-center transform scale-75 transition-transform duration-300">
+        <div class="max-w-xs w-full mx-4 bg-slate-900 p-8 rounded-[2.5rem] border border-white/10 text-center transform scale-75 transition-transform duration-300 shadow-2xl">
             <div class="text-rose-500 text-xs font-bold tracking-widest mb-2 uppercase">ผู้โชคดีคือ!</div>
             <div id="winner-name" class="text-4xl font-black text-white mb-4 break-words leading-tight">?</div>
             <div id="mission-box" class="mt-4 p-5 bg-white/5 rounded-3xl border border-amber-500/30">
@@ -176,157 +176,158 @@
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // *** ใส่ API Key ของคุณที่นี่ถ้าเอาไปขึ้น GitHub จริง ***
+        // *** เปลี่ยนเป็น API Key ของคุณจาก Google AI Studio ***
         const apiKey = ""; 
 
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'party-wheel-mobile';
-        let user = null;
-        let lastWinnerName = "";
-        let isMuted = false;
+        // ตรวจสอบ Config ของ Firebase อย่างปลอดภัย
+        let firebaseApp, auth, db, user;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'party-wheel-prod';
+        const cloudStatus = document.getElementById('cloud-status');
 
+        try {
+            if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                const firebaseConfig = JSON.parse(__firebase_config);
+                firebaseApp = initializeApp(firebaseConfig);
+                auth = getAuth(firebaseApp);
+                db = getFirestore(firebaseApp);
+                
+                const initAuth = async () => {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                };
+                initAuth();
+
+                onAuthStateChanged(auth, async (u) => {
+                    user = u;
+                    if (user) {
+                        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'party_config', 'settings');
+                        try {
+                            const snap = await getDoc(docRef);
+                            if (snap.exists()) {
+                                document.getElementById('names-input').value = snap.data().names.join('\n');
+                                updateWheel();
+                            }
+                            cloudStatus.textContent = "เชื่อมต่อระบบ Cloud แล้ว ✅";
+                        } catch (e) { console.error(e); }
+                    }
+                });
+            } else {
+                cloudStatus.textContent = "โหมดเล่นในเครื่อง (ไม่ได้ต่อ Cloud)";
+            }
+        } catch (e) {
+            console.warn("Firebase setup failed, continuing in local mode.", e);
+            cloudStatus.textContent = "โหมดเล่นในเครื่อง";
+        }
+
+        // --- UI Logic (ทำงานทันทีไม่รอ Cloud) ---
         const canvas = document.getElementById('wheel-canvas');
         const ctx = canvas.getContext('2d');
         const namesInput = document.getElementById('names-input');
         const missionsInput = document.getElementById('missions-input');
         const spinBtn = document.getElementById('spin-button');
         const historyList = document.getElementById('history-list');
-        const cloudStatus = document.getElementById('cloud-status');
         const soundOnIcon = document.getElementById('sound-icon-on');
         const soundOffIcon = document.getElementById('sound-icon-off');
 
         let names = [];
         let rotation = 0;
         let isSpinning = false;
+        let lastWinnerName = "";
+        let isMuted = false;
         const colors = ['#f43f5e', '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#6366f1', '#06b6d4'];
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        // ฟังก์ชันจัดการ UI (ประกาศให้ปุ่มเข้าถึงได้)
         const switchTab = (tabName) => {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.getElementById(`tab-${tabName}`).classList.add('active');
-            
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 btn.classList.remove('active', 'text-rose-500');
                 btn.classList.add('text-slate-500');
             });
-            
             const activeNav = document.getElementById(`nav-${tabName}-btn`);
             activeNav.classList.add('active', 'text-rose-500');
             activeNav.classList.remove('text-slate-500');
         };
 
-        const toggleMute = () => {
+        // Attach listeners ทันที
+        document.getElementById('nav-setup-btn').onclick = () => switchTab('setup');
+        document.getElementById('nav-wheel-btn').onclick = () => switchTab('wheel');
+        document.getElementById('nav-history-btn').onclick = () => switchTab('history');
+        document.getElementById('mute-toggle-btn').onclick = () => {
             isMuted = !isMuted;
             soundOnIcon.classList.toggle('hidden', isMuted);
             soundOffIcon.classList.toggle('hidden', !isMuted);
             if (!isMuted && audioCtx.state === 'suspended') audioCtx.resume();
         };
 
-        // ผูก Event Listeners กับปุ่มต่างๆ แทนการใช้ onclick ใน HTML
-        document.getElementById('nav-setup-btn').addEventListener('click', () => switchTab('setup'));
-        document.getElementById('nav-wheel-btn').addEventListener('click', () => switchTab('wheel'));
-        document.getElementById('nav-history-btn').addEventListener('click', () => switchTab('history'));
-        document.getElementById('mute-toggle-btn').addEventListener('click', toggleMute);
-        document.getElementById('save-btn').addEventListener('click', () => saveToCloud());
-        document.getElementById('clear-btn').addEventListener('click', () => { namesInput.value = ""; updateWheel(); });
-        document.getElementById('spin-button').addEventListener('click', () => spinWheel());
-        document.getElementById('restore-btn').addEventListener('click', () => restoreOriginalNames());
-        document.getElementById('clear-history-btn').addEventListener('click', () => { historyList.innerHTML = '<p class="text-slate-600 text-center text-sm py-10">ยังไม่มีประวัติการสุ่ม</p>'; });
-        document.getElementById('close-modal-btn').addEventListener('click', () => closeModal());
-        document.getElementById('ai-btn').addEventListener('click', () => askGemini());
-
-        // ระบบเสียง
-        function playTick(freq = 800) {
-            if (isMuted) return;
-            try {
-                if (audioCtx.state === 'suspended') audioCtx.resume();
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.connect(gain); gain.connect(audioCtx.destination);
-                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
-            } catch(e) {}
-        }
-
-        function playWinSound() {
-            if (isMuted) return;
-            try {
-                [523, 659, 783, 1046].forEach((f, i) => {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.frequency.setValueAtTime(f, audioCtx.currentTime + (i * 0.1));
-                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime + (i * 0.1));
-                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + (i * 0.1) + 0.5);
-                    osc.start(audioCtx.currentTime + (i * 0.1)); osc.stop(audioCtx.currentTime + (i * 0.1) + 0.5);
-                });
-            } catch(e) {}
-        }
-
-        // ฐานข้อมูล
-        const initAuth = async () => {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
-            }
-        };
-
-        onAuthStateChanged(auth, async (u) => {
-            user = u;
-            if (user) {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'party_config', 'settings');
-                try {
-                    const snap = await getDoc(docRef);
-                    if (snap.exists()) {
-                        namesInput.value = snap.data().names.join('\n');
-                        cloudStatus.textContent = "เชื่อมต่อระบบ Cloud แล้ว";
-                    } else {
-                        cloudStatus.textContent = "ยังไม่มีข้อมูลที่บันทึกไว้";
-                    }
-                } catch (e) { cloudStatus.textContent = "โหมดออฟไลน์"; }
-                updateWheel();
-            }
-        });
-
-        initAuth();
-
-        const saveToCloud = async () => {
-            if (!user) return;
-            const currentNames = namesInput.value.split('\n').filter(n => n.trim());
-            cloudStatus.textContent = "กำลังบันทึก...";
-            try {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'party_config', 'settings');
-                await setDoc(docRef, { names: currentNames, updatedAt: new Date() });
-                cloudStatus.textContent = "บันทึกเรียบร้อย!";
-                updateWheel();
-            } catch (e) { cloudStatus.textContent = "บันทึกไม่สำเร็จ"; }
-        };
-
-        const restoreOriginalNames = async () => {
-            if (!user || isSpinning) return;
-            cloudStatus.textContent = "กำลังคืนค่ารายชื่อ...";
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'party_config', 'settings');
-            try {
-                const snap = await getDoc(docRef);
-                if (snap.exists()) {
-                    namesInput.value = snap.data().names.join('\n');
-                    updateWheel();
-                    cloudStatus.textContent = "คืนค่ารายชื่อเดิมแล้ว ✅";
-                }
-            } catch (e) {}
-        };
-
-        // วงล้อ
         const updateWheel = () => {
             names = namesInput.value.split('\n').map(n => n.trim()).filter(n => n !== "");
             draw();
+        };
+        namesInput.oninput = updateWheel;
+
+        document.getElementById('clear-btn').onclick = () => { namesInput.value = ""; updateWheel(); };
+        document.getElementById('save-btn').onclick = async () => {
+            if (!db || !user) {
+                alert("ระบบ Cloud ไม่พร้อมใช้งานในโหมดนี้ (ต้องตั้งค่า Firebase Config)");
+                return;
+            }
+            cloudStatus.textContent = "กำลังบันทึก...";
+            try {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'party_config', 'settings'), {
+                    names: namesInput.value.split('\n').filter(n => n.trim()),
+                    updatedAt: new Date()
+                });
+                cloudStatus.textContent = "บันทึกเรียบร้อย! ✅";
+            } catch (e) { cloudStatus.textContent = "บันทึกไม่สำเร็จ"; }
+        };
+
+        document.getElementById('restore-btn').onclick = async () => {
+            if (!db || !user || isSpinning) return;
+            const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'party_config', 'settings'));
+            if (snap.exists()) {
+                namesInput.value = snap.data().names.join('\n');
+                updateWheel();
+            }
+        };
+
+        spinBtn.onclick = () => {
+            if (isSpinning || names.length === 0) return;
+            isSpinning = true; spinBtn.disabled = true;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const duration = 5000; const startRot = rotation;
+            const extra = 15 + Math.random() * 10; const targetRot = startRot + (extra * Math.PI * 2);
+            const startTime = performance.now(); let lastTick = 0;
+            function animate(now) {
+                const elapsed = now - startTime; const progress = Math.min(elapsed / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 5); rotation = startRot + (targetRot - startRot) * eased;
+                const sliceAngle = (Math.PI * 2) / names.length;
+                if (Math.floor(rotation / (sliceAngle / 1)) !== lastTick) {
+                    if (!isMuted) {
+                        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+                        osc.connect(gain); gain.connect(audioCtx.destination);
+                        osc.frequency.setValueAtTime(800 - (progress * 200), audioCtx.currentTime);
+                        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+                        osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+                    }
+                    lastTick = Math.floor(rotation / (sliceAngle / 1));
+                }
+                draw();
+                if (progress < 1) requestAnimationFrame(animate);
+                else {
+                    isSpinning = false; spinBtn.disabled = false;
+                    const normalized = rotation % (Math.PI * 2);
+                    let idx = Math.floor(( (Math.PI * 1.5) - normalized ) / sliceAngle) % names.length;
+                    if (idx < 0) idx += names.length;
+                    lastWinnerName = names[idx];
+                    showResult(lastWinnerName, idx);
+                }
+            }
+            requestAnimationFrame(animate);
         };
 
         function draw() {
@@ -351,84 +352,45 @@
             ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 8; ctx.stroke();
         }
 
-        const spinWheel = () => {
-            if (isSpinning || names.length === 0) return;
-            isSpinning = true; spinBtn.disabled = true;
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const duration = 5000; const startRot = rotation;
-            const extra = 15 + Math.random() * 10; const targetRot = startRot + (extra * Math.PI * 2);
-            const startTime = performance.now(); let lastTick = 0;
-            function animate(now) {
-                const elapsed = now - startTime; const progress = Math.min(elapsed / duration, 1);
-                const eased = 1 - Math.pow(1 - progress, 5); rotation = startRot + (targetRot - startRot) * eased;
-                const sliceAngle = (Math.PI * 2) / names.length;
-                if (Math.floor(rotation / (sliceAngle / 1)) !== lastTick) { playTick(800 - (progress * 200)); lastTick = Math.floor(rotation / (sliceAngle / 1)); }
-                draw();
-                if (progress < 1) requestAnimationFrame(animate);
-                else finishSpin();
-            }
-            requestAnimationFrame(animate);
-        };
-
-        function finishSpin() {
-            isSpinning = false; spinBtn.disabled = false; playWinSound();
-            const normalized = rotation % (Math.PI * 2); const slice = (Math.PI * 2) / names.length;
-            let idx = Math.floor(( (Math.PI * 1.5) - normalized ) / slice) % names.length;
-            if (idx < 0) idx += names.length;
-            lastWinnerName = names[idx]; showResult(lastWinnerName, idx);
-        }
-
         function showResult(name, index) {
             const modal = document.getElementById('result-modal');
-            const winnerName = document.getElementById('winner-name');
-            const winnerMission = document.getElementById('winner-mission');
-            winnerName.textContent = name; modal.classList.remove('hidden');
+            document.getElementById('winner-name').textContent = name;
+            modal.classList.remove('hidden');
             const missions = missionsInput.value.split('\n').filter(m => m.trim());
-            let mIdx = 0; const mInt = setInterval(() => { winnerMission.textContent = missions[mIdx % missions.length]; mIdx++; }, 80);
+            let mIdx = 0; const mInt = setInterval(() => { document.getElementById('winner-mission').textContent = missions[mIdx++ % missions.length]; }, 80);
             setTimeout(() => {
                 clearInterval(mInt); const finalM = missions[Math.floor(Math.random() * missions.length)];
-                winnerMission.textContent = finalM; addToHistory(name, finalM);
+                document.getElementById('winner-mission').textContent = finalM;
+                const list = document.getElementById('history-list'); const empty = list.querySelector('p'); if (empty) empty.remove();
+                const div = document.createElement('div'); div.className = "history-item bg-white/5 p-4 rounded-2xl border border-white/5 flex justify-between items-center";
+                div.innerHTML = `<div><div class="text-rose-400 font-bold">${name}</div><div class="text-xs text-slate-400">${finalM}</div></div><div class="text-[10px] text-slate-600">${new Date().toLocaleTimeString('th-TH')}</div>`;
+                list.prepend(div);
                 if (document.getElementById('remove-mode').checked) { names.splice(index, 1); namesInput.value = names.join('\n'); }
             }, 1200);
             setTimeout(() => { modal.classList.add('opacity-100'); modal.querySelector('div').classList.remove('scale-75'); }, 10);
         }
 
-        async function fetchWithRetry(url, options, retries = 3) {
-            for (let i = 0; i < retries; i++) {
-                try { const r = await fetch(url, options); if (r.ok) return await r.json(); } catch (e) {}
-                await new Promise(res => setTimeout(res, 1000));
-            }
-            throw new Error("Failed");
-        }
-
-        const askGemini = async () => {
-            const aiBtn = document.getElementById('ai-btn'); const winnerMission = document.getElementById('winner-mission');
-            aiBtn.textContent = "🪄 กำลังคิดภารกิจ..."; aiBtn.disabled = true;
-            try {
-                const result = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: "ขอภารกิจสั้นๆ ฮาๆ สำหรับ " + lastWinnerName }] }], systemInstruction: { parts: [{ text: "คุณเป็นเพื่อนในวงเหล้ากวนๆ คิดภารกิจสั้นมาก 1 ประโยคไทยเท่านั้น" }] } })
-                });
-                const aiText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (aiText) { winnerMission.textContent = aiText.trim(); addToHistory(lastWinnerName, "✨ AI: " + aiText.trim()); }
-            } catch (e) { winnerMission.textContent = "AI เมาค้างอยู่..."; }
-            finally { aiBtn.textContent = "✨ ขอภารกิจป่วนๆ จาก AI"; aiBtn.disabled = false; }
-        };
-
-        function addToHistory(name, mission) {
-            const list = document.getElementById('history-list'); const empty = list.querySelector('p'); if (empty) empty.remove();
-            const div = document.createElement('div'); div.className = "history-item bg-white/5 p-4 rounded-2xl border border-white/5 flex justify-between items-center";
-            div.innerHTML = `<div><div class="text-rose-400 font-bold">${name}</div><div class="text-xs text-slate-400">${mission}</div></div><div class="text-[10px] text-slate-600">${new Date().toLocaleTimeString('th-TH')}</div>`;
-            list.prepend(div);
-        }
-
-        const closeModal = () => {
+        document.getElementById('close-modal-btn').onclick = () => {
             const m = document.getElementById('result-modal'); m.classList.remove('opacity-100'); m.querySelector('div').classList.add('scale-75');
             setTimeout(() => { m.classList.add('hidden'); updateWheel(); }, 300);
         };
+
+        document.getElementById('ai-btn').onclick = async () => {
+            const btn = document.getElementById('ai-btn'); btn.textContent = "🪄 กำลังคิด..."; btn.disabled = true;
+            try {
+                const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: "ขอภารกิจสั้นๆ ฮาๆ สำหรับ " + lastWinnerName }] }], systemInstruction: { parts: [{ text: "คุณเป็นเพื่อนในวงเหล้ากวนๆ คิดภารกิจสั้นมาก 1 ประโยคไทยเท่านั้น" }] } })
+                });
+                const res = await r.json(); const aiText = res.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (aiText) document.getElementById('winner-mission').textContent = aiText.trim();
+            } catch (e) { document.getElementById('winner-mission').textContent = "AI เมาค้างอยู่..."; }
+            finally { btn.textContent = "✨ ขอภารกิจป่วนๆ จาก AI"; btn.disabled = false; }
+        };
+
+        document.getElementById('clear-history-btn').onclick = () => { historyList.innerHTML = '<p class="text-slate-600 text-center text-sm py-10">ยังไม่มีประวัติการสุ่ม</p>'; };
         
-        namesInput.addEventListener('input', updateWheel);
-        updateWheel(); // วาดครั้งแรก
+        updateWheel();
     </script>
 </body>
 </html>
