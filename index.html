@@ -58,7 +58,7 @@
         <h1 class="text-3xl font-black italic tracking-tighter bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 bg-clip-text text-transparent uppercase">
             Party Wheel ✨
         </h1>
-        <p id="cloud-status" class="text-[10px] text-slate-500 italic mt-1 leading-none">โหมดเล่นในเครื่อง 🏠</p>
+        <p id="cloud-status" class="text-[10px] text-slate-500 italic mt-1 leading-none">พร้อมใช้งาน</p>
         
         <button id="mute-toggle-btn" class="absolute right-4 top-4 p-2 bg-white/5 rounded-full border border-white/10 active:scale-90 transition-all">
             <svg id="sound-icon-on" class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -157,7 +157,7 @@
         </button>
     </nav>
 
-    <!-- Modal ผู้โชคดี (ตัดปุ่ม AI ออกเรียบร้อย) -->
+    <!-- Modal ผู้โชคดี -->
     <div id="result-modal" class="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
         <div class="max-w-xs w-full mx-4 bg-slate-900 p-8 rounded-[2.5rem] border border-white/10 text-center transform scale-75 transition-transform duration-300 shadow-2xl">
             <div class="text-rose-500 text-xs font-bold tracking-widest mb-2 uppercase leading-none">ผู้โชคดีคือ!</div>
@@ -218,6 +218,7 @@
             soundOnIcon.classList.toggle('hidden', isMuted);
             soundOffIcon.classList.toggle('hidden', !isMuted);
             if (!isMuted && audioCtx.state === 'suspended') audioCtx.resume();
+            if (isMuted) window.speechSynthesis.cancel();
         };
         document.getElementById('clear-btn').onclick = () => { namesInput.value = ""; updateWheel(); };
         document.getElementById('close-modal-btn').onclick = () => closeModal();
@@ -225,11 +226,25 @@
         namesInput.oninput = () => updateWheel();
         spinBtn.onclick = () => spinWheelAction();
 
+        // 2. ฟังก์ชันเสียงพูด (Text-to-Speech)
+        function speakThai(text) {
+            if (isMuted) return;
+            // ยกเลิกเสียงเดิมก่อนหน้า
+            window.speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'th-TH';
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+            
+            // เพิ่มความลื่นไหลในมือถือ
+            window.speechSynthesis.speak(utterance);
+        }
+
         // ปุ่มบันทึก (Backup ใน Local Storage สำรอง)
         document.getElementById('save-btn').onclick = async () => {
             const currentList = namesInput.value.split('\n').filter(n => n.trim());
             updateWheel();
-            
             localStorage.setItem('party_wheel_backup', JSON.stringify(currentList));
             
             saveFeedback.classList.remove('opacity-0');
@@ -240,19 +255,16 @@
                 try {
                     saveFeedback.textContent = "กำลังส่งข้อมูลขึ้น Cloud...";
                     await setDoc(doc(db, 'artifacts', 'party-wheel-prod', 'public', 'data', 'party_config', 'settings'), {
-                        names: currentList,
-                        updatedAt: new Date()
+                        names: currentList, updatedAt: new Date()
                     });
                     saveFeedback.textContent = "บันทึก Cloud สำเร็จ ✅";
                     saveFeedback.className = "text-[10px] text-center mt-2 text-emerald-500 transition-opacity";
-                } catch (e) {
-                    saveFeedback.textContent = "บันทึก Cloud ไม่สำเร็จ";
-                }
+                } catch (e) { saveFeedback.textContent = "บันทึก Cloud ไม่สำเร็จ"; }
             }
             setTimeout(() => saveFeedback.classList.add('opacity-0'), 3000);
         };
 
-        // 2. ระบบวงล้อ
+        // 3. ระบบวงล้อ
         function updateWheel() {
             names = namesInput.value.split('\n').map(n => n.trim()).filter(n => n !== "");
             draw();
@@ -274,8 +286,8 @@
                 ctx.arc(centerX, centerY, radius, start, start + slice); ctx.fill();
                 ctx.save(); ctx.translate(centerX, centerY); ctx.rotate(start + slice / 2); ctx.textAlign = "right"; ctx.fillStyle = "#fff";
                 
-                // ปรับฟอนต์ให้ใหญ่ขึ้นตามที่ขอ
-                let fontSize = names.length > 20 ? 36 : (names.length > 10 ? 58 : 88);
+                // ปรับฟอนต์ให้ใหญ่ขึ้นมาก (สูงสุด 92px)
+                let fontSize = names.length > 20 ? 40 : (names.length > 10 ? 64 : 92);
                 ctx.font = `900 ${fontSize}px Kanit`; 
                 ctx.shadowBlur = 15; 
                 ctx.shadowColor = "rgba(0,0,0,0.6)";
@@ -327,10 +339,15 @@
             document.getElementById('result-modal').classList.remove('hidden');
             const missions = missionsInput.value.split('\n').filter(m => m.trim());
             let mIdx = 0; const mInt = setInterval(() => { document.getElementById('winner-mission').textContent = missions[mIdx++ % missions.length]; }, 80);
+            
             setTimeout(() => {
                 clearInterval(mInt);
                 const finalM = missions[Math.floor(Math.random() * missions.length)];
                 document.getElementById('winner-mission').textContent = finalM;
+                
+                // เริ่มประกาศเสียงพูด
+                speakThai(`ผู้โชคดีคือคุณ ${name} ภารกิจคือ ${finalM}`);
+
                 const div = document.createElement('div');
                 div.className = "bg-white/5 p-4 rounded-2xl border border-white/5 flex justify-between items-center";
                 div.innerHTML = `<div><div class="text-rose-400 font-bold">${name}</div><div class="text-xs text-slate-400">${finalM}</div></div><div class="text-[10px] text-slate-600">${new Date().toLocaleTimeString('th-TH')}</div>`;
@@ -343,51 +360,35 @@
 
         function closeModal() {
             const m = document.getElementById('result-modal'); m.classList.remove('opacity-100');
-            setTimeout(() => m.classList.add('hidden'), 300);
+            setTimeout(() => { m.classList.add('hidden'); window.speechSynthesis.cancel(); }, 300);
         }
 
-        // 3. ระบบคืนค่ารายชื่อ (ทำงานได้ทั้ง Cloud และ Local Backup)
+        // 4. ระบบคืนค่ารายชื่อ
         document.getElementById('restore-btn').onclick = async () => {
             if (isSpinning) return;
-            
-            // 1. ลองดึงจาก Cloud ก่อนถ้ามี
             if (db && user) {
                 try {
                     const snap = await getDoc(doc(db, 'artifacts', 'party-wheel-prod', 'public', 'data', 'party_config', 'settings'));
-                    if (snap.exists()) {
-                        namesInput.value = snap.data().names.join('\n');
-                        updateWheel();
-                        return;
-                    }
+                    if (snap.exists()) { namesInput.value = snap.data().names.join('\n'); updateWheel(); return; }
                 } catch (e) {}
             }
-
-            // 2. ถ้าไม่มี Cloud ให้ดึงจาก Local Storage
             const backup = localStorage.getItem('party_wheel_backup');
-            if (backup) {
-                namesInput.value = JSON.parse(backup).join('\n');
-                updateWheel();
-            } else {
-                saveFeedback.classList.remove('opacity-0');
-                saveFeedback.textContent = "ไม่มีรายชื่อสำรอง กรุณาบันทึกรายชื่อก่อน";
-                setTimeout(() => saveFeedback.classList.add('opacity-0'), 3000);
-            }
+            if (backup) { namesInput.value = JSON.parse(backup).join('\n'); updateWheel(); }
         };
 
-        // 4. ระบบ Cloud (ทำงานเงียบๆ)
+        // 5. ระบบ Cloud (Silent)
         const startFirebase = async () => {
             try {
                 if (window.__firebase_config) {
                     const config = JSON.parse(window.__firebase_config);
                     const app = initializeApp(config);
-                    auth = getAuth(app);
-                    db = getFirestore(app);
+                    auth = getAuth(app); db = getFirestore(app);
                     if (window.__initial_auth_token) { await signInWithCustomToken(auth, window.__initial_auth_token); } 
                     else { await signInAnonymously(auth); }
                     onAuthStateChanged(auth, async (u) => {
                         user = u;
                         if (user) {
-                            cloudStatus.textContent = "เชื่อมต่อ Cloud สำเร็จ ✅";
+                            cloudStatus.textContent = "เชื่อมต่อระบบ Cloud แล้ว ✅";
                             const snap = await getDoc(doc(db, 'artifacts', 'party-wheel-prod', 'public', 'data', 'party_config', 'settings'));
                             if (snap.exists()) { namesInput.value = snap.data().names.join('\n'); updateWheel(); }
                         }
@@ -398,9 +399,7 @@
 
         // เริ่มต้น
         const initialLoad = localStorage.getItem('party_wheel_backup');
-        if (initialLoad) {
-            namesInput.value = JSON.parse(initialLoad).join('\n');
-        }
+        if (initialLoad) { namesInput.value = JSON.parse(initialLoad).join('\n'); }
         updateWheel();
         startFirebase();
     </script>
