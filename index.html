@@ -144,7 +144,7 @@
         </div>
     </main>
 
-    <!-- Bottom Navigation -->
+    <!-- Navigation -->
     <nav class="bg-slate-950/80 backdrop-blur-xl border-t border-white/10 p-2 pb-6 flex justify-around items-center">
         <button id="nav-setup-btn" class="nav-btn flex flex-col items-center gap-1 p-2 text-slate-500">
             <span class="text-xl">⚙️</span>
@@ -215,7 +215,7 @@
         const colors = ['#f43f5e', '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#6366f1', '#06b6d4'];
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        // 1. ผูกปุ่มกดพื้นฐาน (ทำงานทันที)
+        // 1. ผูกปุ่มกดพื้นฐาน
         document.getElementById('nav-setup-btn').onclick = () => window.switchTab('setup');
         document.getElementById('nav-wheel-btn').onclick = () => window.switchTab('wheel');
         document.getElementById('nav-history-btn').onclick = () => window.switchTab('history');
@@ -231,33 +231,35 @@
         document.getElementById('clear-history-btn').onclick = () => { historyList.innerHTML = '<p class="text-slate-600 text-center text-sm py-10">ยังไม่มีประวัติการสุ่ม</p>'; };
         namesInput.oninput = () => updateWheel();
 
-        // 2. ฟังก์ชันเสียงพูด (แก้ไขเพื่อให้เบราว์เซอร์อนุญาต)
+        // 2. ฟังก์ชันเสียงพูด (Cute & Playful - แก้ไขให้ชัวร์ขึ้น)
+        let thaiVoice = null;
+        function loadVoices() {
+            const voices = window.speechSynthesis.getVoices();
+            thaiVoice = voices.find(v => v.lang.includes('th') && (v.name.includes('Female') || v.name.includes('Kanya') || v.name.includes('Google') || v.name.includes('Narisa')));
+        }
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+        loadVoices();
+
         function speakThaiMission(mission) {
-            if (isMuted) return;
+            if (isMuted || !window.speechSynthesis) return;
             
-            // ยกเลิกเสียงที่กำลังพูดอยู่ทั้งหมดเพื่อความแม่นยำ
             window.speechSynthesis.cancel();
             
-            // ประโยคสุ่มให้น่ารัก ขี้เล่น (ไม่พูดชื่อ)
             const intros = [
                 `ว้าววว! ภารกิจรอบนี้คือ ${mission} ค่ะ เริ่มเลยยย`,
-                `อุ๊ย! ได้ ${mission} นะคะ ห้ามเบี้ยวนะ`,
-                `เย้! ต้อง ${mission} ค่ะ จัดไปเลย`,
+                `อุ๊ย! ได้ ${mission} นะคะ ห้ามเบี้ยวเด็ดขาด`,
+                `เย้! ต้อง ${mission} ค่ะ จัดไปเลยยย`,
                 `ภารกิจคือ ${mission} นะคะ สู้ๆ ค่ะ`
             ];
             const text = intros[Math.floor(Math.random() * intros.length)];
             
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'th-TH';
-            utterance.pitch = 1.6; // เสียงสูงขึ้นให้น่ารัก
-            utterance.rate = 1.1;  // พูดเร็วขึ้นนิดนึงให้ดูสดใส
+            utterance.pitch = 1.6; 
+            utterance.rate = 1.1; 
             utterance.volume = 1.0;
 
-            // พยายามดึงเสียงผู้หญิง
-            const voices = window.speechSynthesis.getVoices();
-            const thaiFemaleVoice = voices.find(v => v.lang.includes('th') && (v.name.includes('Female') || v.name.includes('Kanya') || v.name.includes('Google')));
-            if (thaiFemaleVoice) utterance.voice = thaiFemaleVoice;
-
+            if (thaiVoice) utterance.voice = thaiVoice;
             window.speechSynthesis.speak(utterance);
         }
 
@@ -301,8 +303,6 @@
                 ctx.beginPath(); ctx.moveTo(centerX, centerY);
                 ctx.arc(centerX, centerY, radius, start, start + slice); ctx.fill();
                 ctx.save(); ctx.translate(centerX, centerY); ctx.rotate(start + slice / 2); ctx.textAlign = "right"; ctx.fillStyle = "#fff";
-                
-                // ฟอนต์ใหญ่พิเศษสะใจ (สูงสุด 115px)
                 let fontSize = names.length > 20 ? 48 : (names.length > 10 ? 76 : 115);
                 ctx.font = `900 ${fontSize}px Kanit`; ctx.shadowBlur = 15; ctx.shadowColor = "rgba(0,0,0,0.6)";
                 ctx.fillText(name.substring(0, 12), radius - 40, fontSize/3); ctx.restore();
@@ -315,11 +315,13 @@
             if (isSpinning || names.length === 0) return;
             isSpinning = true; spinBtn.disabled = true;
             
-            // ปลุกระบบเสียงพูดทันทีจากการคลิก (กันเบราว์เซอร์บล็อก)
             if (audioCtx.state === 'suspended') audioCtx.resume();
-            if (!isMuted) {
-                const dummy = new SpeechSynthesisUtterance("");
-                window.speechSynthesis.speak(dummy);
+            
+            // สำคัญ: "ปลุก" ระบบเสียงพูดทันทีที่คลิก (เบราว์เซอร์จะยอมจำนน)
+            if (!isMuted && window.speechSynthesis) {
+                window.speechSynthesis.cancel();
+                const wakeUp = new SpeechSynthesisUtterance("");
+                window.speechSynthesis.speak(wakeUp);
             }
 
             const duration = 5000; const startRot = rotation;
@@ -363,7 +365,7 @@
                 const finalM = missions[Math.floor(Math.random() * missions.length)];
                 document.getElementById('winner-mission').textContent = finalM;
                 
-                // ประกาศเสียงพากย์น่ารักๆ
+                // ประกาศเสียงพากย์น่ารักๆ หลังหยุดหมุน
                 speakThaiMission(finalM);
 
                 const div = document.createElement('div'); div.className = "bg-white/5 p-4 rounded-2xl border border-white/5 flex justify-between items-center";
@@ -380,22 +382,16 @@
             setTimeout(() => { m.classList.add('hidden'); window.speechSynthesis.cancel(); }, 300);
         }
 
-        // 5. ระบบคืนค่า และ Firebase
         document.getElementById('restore-btn').onclick = async () => {
             if (isSpinning) return;
             const backup = localStorage.getItem('party_wheel_backup');
             if (backup) {
                 namesInput.value = JSON.parse(backup).join('\n');
                 updateWheel();
-            } else if (db && user) {
-                try {
-                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'party_settings', 'config');
-                    const snap = await getDoc(docRef);
-                    if (snap.exists()) { namesInput.value = snap.data().names.join('\n'); updateWheel(); }
-                } catch (e) { }
             }
         };
 
+        // --- ระบบ Cloud ---
         const startFirebase = async () => {
             try {
                 if (typeof __firebase_config !== 'undefined') {
