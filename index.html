@@ -58,7 +58,7 @@
         <h1 class="text-3xl font-black italic tracking-tighter bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 bg-clip-text text-transparent uppercase">
             Party Wheel ✨
         </h1>
-        <p id="cloud-status" class="text-[10px] text-slate-500 italic mt-1 leading-none">พร้อมใช้งาน (โหมดปกติ)</p>
+        <p id="cloud-status" class="text-[10px] text-slate-500 italic mt-1 leading-none">กำลังโหลด...</p>
         
         <button id="mute-toggle-btn" class="absolute right-4 top-4 p-2 bg-white/5 rounded-full border border-white/10 active:scale-90 transition-all">
             <svg id="sound-icon-on" class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -77,20 +77,16 @@
         <div id="tab-setup" class="tab-content space-y-4">
             <div class="bg-slate-900/60 p-5 rounded-3xl border border-white/5 shadow-xl">
                 <h2 class="text-lg font-bold mb-3 flex items-center gap-2 text-rose-400">👥 รายชื่อนักดื่ม</h2>
-                <p class="text-[10px] text-slate-400 mb-2">พิมพ์ชื่อคนละ 1 บรรทัด วงล้อจะอัปเดตอัตโนมัติ</p>
-                <textarea id="names-input" class="w-full h-44 bg-black/40 border border-white/10 rounded-2xl p-4 text-white focus:ring-2 focus:ring-rose-500 focus:outline-none transition-all resize-none text-sm" placeholder="พิมพ์ชื่อที่นี่..."></textarea>
+                <textarea id="names-input" class="w-full h-44 bg-black/40 border border-white/10 rounded-2xl p-4 text-white focus:ring-2 focus:ring-rose-500 focus:outline-none transition-all resize-none text-sm" placeholder="พิมพ์ชื่อคนละ 1 บรรทัดที่นี่..."></textarea>
                 <div class="mt-3 flex gap-2">
                     <button id="save-btn" class="flex-1 bg-indigo-600 active:bg-indigo-700 py-3 rounded-xl text-sm font-bold transition-all uppercase shadow-lg shadow-indigo-900/20">💾 บันทึก Cloud</button>
                     <button id="clear-btn" class="px-6 bg-slate-800 active:bg-slate-700 rounded-xl text-sm font-bold transition-all">ล้างชื่อ</button>
-                </div>
-                <div id="cloud-info" class="mt-3 p-3 bg-white/5 rounded-xl border border-white/5 text-[10px] text-slate-500 leading-relaxed">
-                    * ปุ่มบันทึก Cloud จะทำงานเมื่อคุณนำ Firebase Config จาก Google AI Studio มาใส่ในโค้ดเท่านั้น
                 </div>
             </div>
 
             <div class="bg-slate-900/60 p-5 rounded-3xl border border-white/5">
                 <h2 class="text-lg font-bold mb-3 flex items-center gap-2 text-amber-400">🍺 ภารกิจหลัก</h2>
-                <textarea id="missions-input" class="w-full h-32 bg-black/40 border border-white/10 rounded-2xl p-4 text-white text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none transition-all resize-none" readonly>หมดแก้ว
+                <textarea id="missions-input" class="w-full h-32 bg-black/40 border border-white/10 rounded-2xl p-3 text-white text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none transition-all resize-none" readonly>หมดแก้ว
 ครึ่งแก้ว
 สั่งใครก็ได้ดื่ม
 รอดตัวไป!
@@ -121,7 +117,7 @@
 
                 <div class="flex items-center justify-between px-6 py-3 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-sm">
                     <span class="text-sm font-bold text-slate-300">ตัดชื่อคนโดนออก</span>
-                    <input type="checkbox" id="remove-mode" class="w-6 h-6 accent-rose-500 rounded-lg cursor-pointer">
+                    <input type="checkbox" id="remove-mode" class="w-6 h-6 accent-rose-500 rounded-lg">
                 </div>
 
                 <button id="restore-btn" class="w-full py-3 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-2xl text-sm font-bold border border-white/5 active:scale-95 transition-all">
@@ -132,7 +128,7 @@
 
         <!-- Tab 3: History -->
         <div id="tab-history" class="tab-content">
-            <div class="bg-slate-900/60 p-5 rounded-3xl border border-white/5 min-h-[300px] flex flex-col shadow-2xl">
+            <div class="bg-slate-900/60 p-5 rounded-3xl border border-white/5 min-h-[300px] flex flex-col">
                 <h2 class="text-lg font-bold mb-4 flex items-center gap-2 text-indigo-400">📜 ประวัติรอบนี้</h2>
                 <div id="history-list" class="flex-1 space-y-3">
                     <p class="text-slate-600 text-center text-sm py-10">ยังไม่มีประวัติการสุ่ม</p>
@@ -160,10 +156,10 @@
         </button>
     </nav>
 
-    <!-- Modal ผู้โชคดี -->
+    <!-- Modal -->
     <div id="result-modal" class="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
         <div class="max-w-xs w-full mx-4 bg-slate-900 p-8 rounded-[2.5rem] border border-white/10 text-center transform scale-75 transition-transform duration-300 shadow-2xl">
-            <div class="text-rose-500 text-xs font-bold tracking-widest mb-2 uppercase leading-none">ผู้โชคดีคือ!</div>
+            <div class="text-rose-500 text-xs font-bold tracking-widest mb-2 uppercase">ผู้โชคดีคือ!</div>
             <div id="winner-name" class="text-5xl font-black text-white mb-4 break-words leading-tight">?</div>
             <div id="mission-box" class="mt-4 p-5 bg-white/5 rounded-3xl border border-amber-500/30">
                 <div class="text-amber-500 text-[10px] font-bold mb-1 uppercase tracking-widest">ภารกิจ:</div>
@@ -182,48 +178,11 @@
         // *** ใส่ API Key ของคุณที่นี่ ***
         const apiKey = ""; 
 
-        // ตัวแปรควบคุมระบบ
         let db, auth, user;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'party-wheel-prod';
+        const appId = 'party-wheel-prod';
         const cloudStatus = document.getElementById('cloud-status');
 
-        // ฟังก์ชันเริ่มระบบ Firebase แบบปลอดภัย
-        const startFirebase = async () => {
-            try {
-                if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-                    const config = JSON.parse(__firebase_config);
-                    const app = initializeApp(config);
-                    auth = getAuth(app);
-                    db = getFirestore(app);
-
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
-
-                    onAuthStateChanged(auth, async (u) => {
-                        user = u;
-                        if (user) {
-                            cloudStatus.textContent = "เชื่อมต่อ Cloud สำเร็จ ✅";
-                            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'party_config', 'settings');
-                            const snap = await getDoc(docRef);
-                            if (snap.exists()) {
-                                namesInput.value = snap.data().names.join('\n');
-                                updateWheel();
-                            }
-                        }
-                    });
-                } else {
-                    cloudStatus.textContent = "โหมดเล่นในเครื่อง 🏠";
-                }
-            } catch (e) {
-                console.warn("Firebase Config missing or invalid.");
-                cloudStatus.textContent = "โหมดเล่นในเครื่อง 🏠";
-            }
-        };
-
-        // --- ระบบ UI (ทำงานทันที) ---
+        // ฟังก์ชัน UI ทำงานทันที
         const canvas = document.getElementById('wheel-canvas');
         const ctx = canvas.getContext('2d');
         const namesInput = document.getElementById('names-input');
@@ -241,6 +200,11 @@
         const colors = ['#f43f5e', '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#6366f1', '#06b6d4'];
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
+        const updateWheel = () => {
+            names = namesInput.value.split('\n').map(n => n.trim()).filter(n => n !== "");
+            draw();
+        };
+
         const switchTab = (tabName) => {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.getElementById(`tab-${tabName}`).classList.add('active');
@@ -253,7 +217,7 @@
             activeNav.classList.remove('text-slate-500');
         };
 
-        // ผูก Event Listeners ทันที
+        // ผูกปุ่มต่างๆ ให้ทำงานทันที
         document.getElementById('nav-setup-btn').onclick = () => switchTab('setup');
         document.getElementById('nav-wheel-btn').onclick = () => switchTab('wheel');
         document.getElementById('nav-history-btn').onclick = () => switchTab('history');
@@ -263,39 +227,76 @@
             soundOffIcon.classList.toggle('hidden', !isMuted);
             if (!isMuted && audioCtx.state === 'suspended') audioCtx.resume();
         };
-
-        const updateWheel = () => {
-            names = namesInput.value.split('\n').map(n => n.trim()).filter(n => n !== "");
-            draw();
-        };
         namesInput.oninput = updateWheel;
-
         document.getElementById('clear-btn').onclick = () => { namesInput.value = ""; updateWheel(); };
-        document.getElementById('save-btn').onclick = async () => {
-            if (!db || !user) {
-                alert("ระบบ Cloud ยังไม่พร้อม (ต้องตั้งค่า Firebase Config ในโค้ดก่อน)");
-                return;
-            }
-            cloudStatus.textContent = "กำลังบันทึก...";
-            try {
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'party_config', 'settings'), {
-                    names: namesInput.value.split('\n').filter(n => n.trim()),
-                    updatedAt: new Date()
-                });
-                cloudStatus.textContent = "บันทึก Cloud สำเร็จ ✅";
-            } catch (e) { cloudStatus.textContent = "บันทึกไม่สำเร็จ"; }
+        spinBtn.onclick = () => spinWheelAction();
+        document.getElementById('restore-btn').onclick = async () => restoreAction();
+        document.getElementById('close-modal-btn').onclick = () => closeModal();
+        document.getElementById('ai-btn').onclick = () => askGemini();
+        document.getElementById('clear-history-btn').onclick = () => {
+            historyList.innerHTML = '<p class="text-slate-600 text-center text-sm py-10">ยังไม่มีประวัติการสุ่ม</p>';
         };
 
-        document.getElementById('restore-btn').onclick = async () => {
+        // Firebase Setup (แยกส่วนและดัก Error)
+        const startFirebase = async () => {
+            try {
+                // เช็กว่ามีตัวแปรระบบไหม (ถ้าอยู่บน GitHub จะไม่มีตัวแปรเหล่านี้)
+                if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                    const config = JSON.parse(__firebase_config);
+                    const app = initializeApp(config);
+                    auth = getAuth(app);
+                    db = getFirestore(app);
+
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+
+                    onAuthStateChanged(auth, async (u) => {
+                        user = u;
+                        if (user) {
+                            cloudStatus.textContent = "เชื่อมต่อระบบ Cloud แล้ว ✅";
+                            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'party_config', 'settings');
+                            const snap = await getDoc(docRef);
+                            if (snap.exists()) {
+                                namesInput.value = snap.data().names.join('\n');
+                                updateWheel();
+                            }
+                        }
+                    });
+                } else {
+                    cloudStatus.textContent = "โหมดเล่นในเครื่อง (ไม่ได้ต่อ Cloud)";
+                }
+            } catch (e) {
+                cloudStatus.textContent = "โหมดเล่นในเครื่อง";
+            }
+        };
+
+        // ฟังก์ชันช่วยเหลือต่างๆ
+        async function restoreAction() {
             if (!db || !user || isSpinning) return;
             const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'party_config', 'settings'));
             if (snap.exists()) {
                 namesInput.value = snap.data().names.join('\n');
                 updateWheel();
             }
+        }
+
+        document.getElementById('save-btn').onclick = async () => {
+            if (!db || !user) {
+                alert("ต้องตั้งค่า Firebase Config ในโค้ดก่อนถึงจะบันทึก Cloud ได้ครับ");
+                return;
+            }
+            try {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'party_config', 'settings'), {
+                    names: namesInput.value.split('\n').filter(n => n.trim()),
+                    updatedAt: new Date()
+                });
+                alert("บันทึกรายชื่อลง Cloud เรียบร้อย!");
+            } catch (e) { alert("บันทึกไม่สำเร็จ"); }
         };
 
-        // ระบบวาดและหมุน
         function draw() {
             const centerX = 500, centerY = 500, radius = 460;
             ctx.clearRect(0, 0, 1000, 1000);
@@ -318,7 +319,7 @@
             ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 8; ctx.stroke();
         }
 
-        spinBtn.onclick = () => {
+        function spinWheelAction() {
             if (isSpinning || names.length === 0) return;
             isSpinning = true; spinBtn.disabled = true;
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -352,7 +353,7 @@
                 }
             }
             requestAnimationFrame(animate);
-        };
+        }
 
         function showResult(name, index) {
             const modal = document.getElementById('result-modal');
@@ -364,7 +365,7 @@
                 clearInterval(mInt); const finalM = missions[Math.floor(Math.random() * missions.length)];
                 document.getElementById('winner-mission').textContent = finalM;
                 const list = document.getElementById('history-list'); const empty = list.querySelector('p'); if (empty) empty.remove();
-                const div = document.createElement('div'); div.className = "history-item bg-white/5 p-4 rounded-2xl border border-white/5 flex justify-between items-center";
+                const div = document.createElement('div'); div.className = "bg-white/5 p-4 rounded-2xl border border-white/5 flex justify-between items-center";
                 div.innerHTML = `<div><div class="text-rose-400 font-bold">${name}</div><div class="text-xs text-slate-400">${finalM}</div></div><div class="text-[10px] text-slate-600">${new Date().toLocaleTimeString('th-TH')}</div>`;
                 list.prepend(div);
                 if (document.getElementById('remove-mode').checked) { names.splice(index, 1); namesInput.value = names.join('\n'); }
@@ -372,13 +373,13 @@
             setTimeout(() => { modal.classList.add('opacity-100'); modal.querySelector('div').classList.remove('scale-75'); }, 10);
         }
 
-        document.getElementById('close-modal-btn').onclick = () => {
+        function closeModal() {
             const m = document.getElementById('result-modal'); m.classList.remove('opacity-100'); m.querySelector('div').classList.add('scale-75');
             setTimeout(() => { m.classList.add('hidden'); updateWheel(); }, 300);
-        };
+        }
 
-        document.getElementById('ai-btn').onclick = async () => {
-            if (!apiKey) { alert("กรุณาใส่ API Key ของ Gemini ในโค้ดก่อนใช้งาน AI ✨"); return; }
+        async function askGemini() {
+            if (!apiKey) { alert("กรุณาใส่ API Key ในโค้ดก่อนใช้งาน AI ครับ"); return; }
             const btn = document.getElementById('ai-btn'); btn.textContent = "🪄 AI กำลังคิด..."; btn.disabled = true;
             try {
                 const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
@@ -389,13 +390,11 @@
                 if (aiText) document.getElementById('winner-mission').textContent = aiText.trim();
             } catch (e) { document.getElementById('winner-mission').textContent = "AI เมาค้างอยู่..."; }
             finally { btn.textContent = "✨ ขอภารกิจป่วนจาก AI"; btn.disabled = false; }
-        };
+        }
 
-        document.getElementById('clear-history-btn').onclick = () => { historyList.innerHTML = '<p class="text-slate-600 text-center text-sm py-10">ยังไม่มีประวัติการสุ่ม</p>'; };
-        
         // เริ่มต้นระบบ
-        startFirebase();
         updateWheel();
+        startFirebase();
     </script>
 </body>
 </html>
