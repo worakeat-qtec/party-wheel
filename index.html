@@ -209,7 +209,7 @@
         const colors = ['#f43f5e', '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#6366f1', '#06b6d4'];
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        // 1. ผูกปุ่มกดพื้นฐาน (ทำให้ทำงานได้ 100% ทันที)
+        // 1. ผูกปุ่มกดพื้นฐาน
         document.getElementById('nav-setup-btn').onclick = () => window.switchTab('setup');
         document.getElementById('nav-wheel-btn').onclick = () => window.switchTab('wheel');
         document.getElementById('nav-history-btn').onclick = () => window.switchTab('history');
@@ -225,11 +225,14 @@
         namesInput.oninput = () => updateWheel();
         spinBtn.onclick = () => spinWheelAction();
 
-        // ปุ่มบันทึก (เปลี่ยนจาก alert เป็นข้อความนุ่มๆ)
+        // ปุ่มบันทึก (เพิ่มการบันทึกใน Local Storage สำรอง)
         document.getElementById('save-btn').onclick = async () => {
-            updateWheel(); // อัปเดตวงล้อทันที
+            const currentList = namesInput.value.split('\n').filter(n => n.trim());
+            updateWheel();
             
-            // แสดงข้อความบอกสถานะ
+            // บันทึกสำรองไว้ในเครื่องเสมอ (แก้ปัญหา GitHub ไม่คืนค่าชื่อ)
+            localStorage.setItem('party_wheel_backup', JSON.stringify(currentList));
+            
             saveFeedback.classList.remove('opacity-0');
             if (!db || !user) {
                 saveFeedback.textContent = "บันทึกในเครื่องแล้ว (ไม่ได้ต่อ Cloud)";
@@ -238,7 +241,7 @@
                 try {
                     saveFeedback.textContent = "กำลังส่งข้อมูลขึ้น Cloud...";
                     await setDoc(doc(db, 'artifacts', 'party-wheel-prod', 'public', 'data', 'party_config', 'settings'), {
-                        names: namesInput.value.split('\n').filter(n => n.trim()),
+                        names: currentList,
                         updatedAt: new Date()
                     });
                     saveFeedback.textContent = "บันทึก Cloud สำเร็จ ✅";
@@ -270,8 +273,13 @@
                 ctx.fillStyle = colors[i % colors.length];
                 ctx.beginPath(); ctx.moveTo(centerX, centerY); ctx.arc(centerX, centerY, radius, start, start + slice); ctx.fill();
                 ctx.save(); ctx.translate(centerX, centerY); ctx.rotate(start + slice / 2); ctx.textAlign = "right"; ctx.fillStyle = "#fff";
-                let fontSize = names.length > 20 ? 28 : (names.length > 10 ? 44 : 68);
-                ctx.font = `900 ${fontSize}px Kanit`; ctx.shadowBlur = 10; ctx.shadowColor = "rgba(0,0,0,0.5)";
+                
+                // ปรับขนาดฟอนต์ให้ใหญ่ขึ้นกว่าเดิม
+                let fontSize = names.length > 20 ? 32 : (names.length > 10 ? 52 : 78);
+                ctx.font = `900 ${fontSize}px Kanit`; 
+                ctx.shadowBlur = 15; 
+                ctx.shadowColor = "rgba(0,0,0,0.6)";
+                
                 ctx.fillText(name.substring(0, 12), radius - 40, fontSize/3); ctx.restore();
             });
             ctx.fillStyle = "#020617"; ctx.beginPath(); ctx.arc(centerX, centerY, 50, 0, Math.PI * 2); ctx.fill();
@@ -338,7 +346,35 @@
             setTimeout(() => m.classList.add('hidden'), 300);
         }
 
-        // 3. ระบบ Cloud (ทำงานเงียบๆ เบื้องหลัง)
+        // 3. ระบบคืนค่ารายชื่อ (ทำงานได้ทั้ง Cloud และ Local Backup)
+        document.getElementById('restore-btn').onclick = async () => {
+            if (isSpinning) return;
+            
+            // 1. ลองดึงจาก Cloud ก่อนถ้ามี
+            if (db && user) {
+                try {
+                    const snap = await getDoc(doc(db, 'artifacts', 'party-wheel-prod', 'public', 'data', 'party_config', 'settings'));
+                    if (snap.exists()) {
+                        namesInput.value = snap.data().names.join('\n');
+                        updateWheel();
+                        return;
+                    }
+                } catch (e) {}
+            }
+
+            // 2. ถ้าไม่มี Cloud หรือดึงไม่สำเร็จ ให้ดึงจาก Local Storage ที่เราบันทึกสำรองไว้
+            const backup = localStorage.getItem('party_wheel_backup');
+            if (backup) {
+                namesInput.value = JSON.parse(backup).join('\n');
+                updateWheel();
+            } else {
+                saveFeedback.classList.remove('opacity-0');
+                saveFeedback.textContent = "ไม่มีรายชื่อสำรอง กรุณาบันทึกรายชื่อก่อน";
+                setTimeout(() => saveFeedback.classList.add('opacity-0'), 3000);
+            }
+        };
+
+        // 4. ระบบ Cloud (ทำงานเงียบๆ)
         const startFirebase = async () => {
             try {
                 if (window.__firebase_config) {
@@ -360,15 +396,12 @@
             } catch (e) { }
         };
 
-        document.getElementById('restore-btn').onclick = async () => {
-            if (!db || !user || isSpinning) return;
-            try {
-                const snap = await getDoc(doc(db, 'artifacts', 'party-wheel-prod', 'public', 'data', 'party_config', 'settings'));
-                if (snap.exists()) { namesInput.value = snap.data().names.join('\n'); updateWheel(); }
-            } catch (e) { }
-        };
-
         // เริ่มต้น
+        // ดึงรายชื่อจากเครื่องขึ้นมาแสดงก่อนถ้าเคยเล่น
+        const initialLoad = localStorage.getItem('party_wheel_backup');
+        if (initialLoad) {
+            namesInput.value = JSON.parse(initialLoad).join('\n');
+        }
         updateWheel();
         startFirebase();
     </script>
