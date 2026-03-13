@@ -102,6 +102,7 @@
         <div id="tab-wheel" class="tab-content active items-center justify-center gap-6 py-4">
             <div id="wheel-container">
                 <div class="pointer-top">
+                    <!-- SVG Green Bottle -->
                     <svg width="55" height="100" viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg">
                         <path d="M30 60 C30 50 40 45 50 45 C60 45 70 50 70 60 L75 180 C75 190 65 195 50 195 C35 195 25 190 25 180 Z" fill="#2d5a27" stroke="#1a3a16" stroke-width="2"/>
                         <rect x="42" y="10" width="16" height="40" rx="2" fill="#2d5a27" stroke="#1a3a16" stroke-width="2"/>
@@ -180,7 +181,7 @@
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- ระบบ Global UI ---
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'party-wheel-pro';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'party-wheel-pro-final';
         
         window.switchTab = (tabName) => {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -230,12 +231,14 @@
         document.getElementById('clear-history-btn').onclick = () => { historyList.innerHTML = '<p class="text-slate-600 text-center text-sm py-10">ยังไม่มีประวัติการสุ่ม</p>'; };
         namesInput.oninput = () => updateWheel();
 
-        // 2. ฟังก์ชันเสียงพูด (ปรับปรุงให้พูดแค่ภารกิจ แบบขี้เล่น)
+        // 2. ฟังก์ชันเสียงพูด (Cute & Playful - พูดแค่ภารกิจ)
         function speakThaiMission(mission) {
             if (isMuted) return;
+            
+            // ยกเลิกเสียงที่กำลังพูดอยู่ทั้งหมด
             window.speechSynthesis.cancel();
             
-            // ประโยคสุ่มให้น่ารักและขี้เล่นขึ้น (ไม่พูดชื่อ)
+            // ประโยคนำทางให้น่ารัก
             const intros = [
                 `ว้าววว! ภารกิจรอบนี้คือ ${mission} ค่ะ เริ่มเลยยย`,
                 `อุ๊ย! ได้ ${mission} นะคะ ห้ามเบี้ยวนะ`,
@@ -246,18 +249,21 @@
             
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'th-TH';
-            utterance.pitch = 1.45; // เสียงสูงขึ้นให้น่ารัก
-            utterance.rate = 1.15;  // พูดเร็วขึ้นนิดนึงให้ดูสดใส
-            utterance.volume = 1.0;
             
-            // เลือกเสียงผู้หญิง
+            // ปรับจูนให้น่ารัก ขี้เล่น
+            utterance.pitch = 1.45; // เสียงสูงขึ้นเพื่อความสดใส
+            utterance.rate = 1.15;  // พูดเร็วขึ้นเล็กน้อยให้ดูตื่นเต้น
+            utterance.volume = 1.0;
+
+            // พยายามดึงเสียงผู้หญิงไทยถ้ามี
             const voices = window.speechSynthesis.getVoices();
-            const thaiVoice = voices.find(v => v.lang.includes('th') && (v.name.includes('Female') || v.name.includes('Kanya') || v.name.includes('Google')));
-            if (thaiVoice) utterance.voice = thaiVoice;
+            const thaiFemale = voices.find(v => v.lang.includes('th') && (v.name.includes('Female') || v.name.includes('Google') || v.name.includes('Kanya')));
+            if (thaiFemale) utterance.voice = thaiFemale;
 
             window.speechSynthesis.speak(utterance);
         }
 
+        // ปุ่มบันทึก
         document.getElementById('save-btn').onclick = async () => {
             const currentList = namesInput.value.split('\n').filter(n => n.trim());
             updateWheel();
@@ -276,23 +282,7 @@
             setTimeout(() => saveFeedback.classList.add('opacity-0'), 3000);
         };
 
-        document.getElementById('restore-btn').onclick = async () => {
-            if (isSpinning) return;
-            const backup = localStorage.getItem('party_wheel_backup');
-            if (backup) {
-                namesInput.value = JSON.parse(backup).join('\n');
-                updateWheel();
-            } else if (db && user) {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'party_settings', 'config');
-                const snap = await getDoc(docRef);
-                if (snap.exists()) {
-                    namesInput.value = snap.data().names.join('\n');
-                    updateWheel();
-                }
-            }
-        };
-
-        // 3. วาดวงล้อ และ การสุ่ม
+        // 3. วาดวงล้อ
         function updateWheel() {
             names = namesInput.value.split('\n').map(n => n.trim()).filter(n => n !== "");
             draw();
@@ -324,8 +314,13 @@
         spinBtn.onclick = () => {
             if (isSpinning || names.length === 0) return;
             isSpinning = true; spinBtn.disabled = true;
+            
+            // สำคัญ: ปลุกระบบเสียงทันทีจากการคลิกปุ่ม
             if (audioCtx.state === 'suspended') audioCtx.resume();
-            if (!isMuted) window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
+            if (!isMuted) {
+                const dummy = new SpeechSynthesisUtterance("");
+                window.speechSynthesis.speak(dummy);
+            }
 
             const duration = 5000; const startRot = rotation;
             const extra = 15 + Math.random() * 10; const targetRot = startRot + (extra * Math.PI * 2);
@@ -368,7 +363,7 @@
                 const finalM = missions[Math.floor(Math.random() * missions.length)];
                 document.getElementById('winner-mission').textContent = finalM;
                 
-                // ประกาศแค่ภารกิจด้วยเสียงพากย์น่ารักๆ
+                // ประกาศภารกิจด้วยเสียงพากย์น่ารักๆ
                 speakThaiMission(finalM);
 
                 const div = document.createElement('div'); div.className = "bg-white/5 p-4 rounded-2xl border border-white/5 flex justify-between items-center";
@@ -385,7 +380,22 @@
             setTimeout(() => { m.classList.add('hidden'); window.speechSynthesis.cancel(); }, 300);
         }
 
-        // --- ระบบ Cloud (ทำงานแบบเงียบ ไม่ขวางหน้าจอ) ---
+        document.getElementById('restore-btn').onclick = async () => {
+            if (isSpinning) return;
+            const backup = localStorage.getItem('party_wheel_backup');
+            if (backup) {
+                namesInput.value = JSON.parse(backup).join('\n');
+                updateWheel();
+            } else if (db && user) {
+                try {
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'party_settings', 'config');
+                    const snap = await getDoc(docRef);
+                    if (snap.exists()) { namesInput.value = snap.data().names.join('\n'); updateWheel(); }
+                } catch (e) { }
+            }
+        };
+
+        // --- ระบบ Cloud (Rule Fix) ---
         const startFirebase = async () => {
             try {
                 if (typeof __firebase_config !== 'undefined') {
