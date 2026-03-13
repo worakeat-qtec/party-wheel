@@ -58,7 +58,7 @@
         <h1 class="text-3xl font-black italic tracking-tighter bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 bg-clip-text text-transparent uppercase">
             Party Wheel ✨
         </h1>
-        <p id="cloud-status" class="text-[10px] text-slate-500 italic mt-1 leading-none">กำลังโหลด...</p>
+        <p id="cloud-status" class="text-[10px] text-slate-500 italic mt-1 leading-none">พร้อมใช้งาน 🏠</p>
         
         <button id="mute-toggle-btn" class="absolute right-4 top-4 p-2 bg-white/5 rounded-full border border-white/10 active:scale-90 transition-all">
             <svg id="sound-icon-on" class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -157,14 +157,14 @@
         </button>
     </nav>
 
-    <!-- Modal ผู้โชคดี (ตัดปุ่ม AI ออกเรียบร้อย) -->
+    <!-- Modal ผู้โชคดี -->
     <div id="result-modal" class="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
         <div class="max-w-xs w-full mx-4 bg-slate-900 p-8 rounded-[2.5rem] border border-white/10 text-center transform scale-75 transition-transform duration-300 shadow-2xl">
             <div class="text-rose-500 text-xs font-bold tracking-widest mb-2 uppercase leading-none">ผู้โชคดีคือ!</div>
             <div id="winner-name" class="text-5xl font-black text-white mb-4 break-words leading-tight">?</div>
             <div id="mission-box" class="mt-4 p-5 bg-white/5 rounded-3xl border border-amber-500/30">
                 <div class="text-amber-500 text-[10px] font-bold mb-1 uppercase tracking-widest">ภารกิจ:</div>
-                <div id="winner-mission" class="text-xl font-bold text-amber-400 italic leading-snug">...</div>
+                <div id="winner-mission" class="text-2xl font-bold text-amber-400 italic leading-snug">...</div>
             </div>
             <button id="close-modal-btn" class="mt-8 w-full py-4 bg-white text-black rounded-2xl font-bold text-lg active:scale-95 transition-all shadow-xl">ไปต่อ!</button>
         </div>
@@ -176,8 +176,6 @@
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- ระบบ Global UI ---
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'party-wheel-prod';
-        
         window.switchTab = (tabName) => {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.getElementById(`tab-${tabName}`).classList.add('active');
@@ -196,7 +194,6 @@
         const missionsInput = document.getElementById('missions-input');
         const spinBtn = document.getElementById('spin-button');
         const historyList = document.getElementById('history-list');
-        const cloudStatus = document.getElementById('cloud-status');
         const soundOnIcon = document.getElementById('sound-icon-on');
         const soundOffIcon = document.getElementById('sound-icon-off');
         const saveFeedback = document.getElementById('save-feedback');
@@ -225,39 +222,40 @@
         document.getElementById('close-modal-btn').onclick = () => closeModal();
         document.getElementById('clear-history-btn').onclick = () => { historyList.innerHTML = '<p class="text-slate-600 text-center text-sm py-10">ยังไม่มีประวัติการสุ่ม</p>'; };
         namesInput.oninput = () => updateWheel();
-        spinBtn.onclick = () => spinWheelAction();
+        
+        // แก้ไขปุ่ม SPIN เพื่อปลดล็อกเสียงพูด
+        spinBtn.onclick = () => {
+            // ปลดล็อกระบบเสียงพูดทันทีที่กดปุ่ม (เบราว์เซอร์ต้องการการกระตุ้นจากผู้ใช้)
+            if (!isMuted) {
+                const dummyUtterance = new SpeechSynthesisUtterance("");
+                window.speechSynthesis.speak(dummyUtterance);
+            }
+            spinWheelAction();
+        };
 
-        // 2. ฟังก์ชันเสียงพูด (Text-to-Speech)
+        // 2. ฟังก์ชันเสียงพูด (ปรับปรุงเสถียรภาพ)
         function speakThai(text) {
             if (isMuted) return;
+            
+            // เคลียร์คิวเสียงเก่า
             window.speechSynthesis.cancel();
+            
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'th-TH';
             utterance.rate = 1.0;
             utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+            
+            // เรียกใช้งาน
             window.speechSynthesis.speak(utterance);
         }
 
-        // ปุ่มบันทึก (Backup ใน Local Storage สำรอง)
         document.getElementById('save-btn').onclick = async () => {
             const currentList = namesInput.value.split('\n').filter(n => n.trim());
             updateWheel();
             localStorage.setItem('party_wheel_backup', JSON.stringify(currentList));
-            
             saveFeedback.classList.remove('opacity-0');
-            if (!db || !user) {
-                saveFeedback.textContent = "บันทึกในเครื่องแล้ว ✅";
-                saveFeedback.className = "text-[10px] text-center mt-2 text-amber-500 transition-opacity";
-            } else {
-                try {
-                    saveFeedback.textContent = "กำลังส่งข้อมูลขึ้น Cloud...";
-                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'party_config', 'settings'), {
-                        names: currentList, updatedAt: new Date()
-                    });
-                    saveFeedback.textContent = "บันทึก Cloud สำเร็จ ✅";
-                    saveFeedback.className = "text-[10px] text-center mt-2 text-emerald-500 transition-opacity";
-                } catch (e) { saveFeedback.textContent = "บันทึก Cloud ไม่สำเร็จ"; }
-            }
+            saveFeedback.textContent = "อัปเดตรายชื่อเรียบร้อย!";
             setTimeout(() => saveFeedback.classList.add('opacity-0'), 3000);
         };
 
@@ -283,8 +281,8 @@
                 ctx.arc(centerX, centerY, radius, start, start + slice); ctx.fill();
                 ctx.save(); ctx.translate(centerX, centerY); ctx.rotate(start + slice / 2); ctx.textAlign = "right"; ctx.fillStyle = "#fff";
                 
-                // ปรับฟอนต์ให้ใหญ่ขึ้นมาก (สูงสุด 92px)
-                let fontSize = names.length > 20 ? 44 : (names.length > 10 ? 68 : 98);
+                // ปรับขนาดฟอนต์ให้ใหญ่ขึ้นตามที่ขอ
+                let fontSize = names.length > 20 ? 48 : (names.length > 10 ? 74 : 110);
                 ctx.font = `900 ${fontSize}px Kanit`; 
                 ctx.shadowBlur = 15; 
                 ctx.shadowColor = "rgba(0,0,0,0.6)";
@@ -341,13 +339,20 @@
                 clearInterval(mInt);
                 const finalM = missions[Math.floor(Math.random() * missions.length)];
                 document.getElementById('winner-mission').textContent = finalM;
+                
+                // แจ้งเตือนเสียงพูด (เรียกใช้ทันทีหลังหยุดหมุน)
                 speakThai(`ผู้โชคดีคือคุณ ${name} ภารกิจคือ ${finalM}`);
+
                 const div = document.createElement('div');
                 div.className = "bg-white/5 p-4 rounded-2xl border border-white/5 flex justify-between items-center";
                 div.innerHTML = `<div><div class="text-rose-400 font-bold">${name}</div><div class="text-xs text-slate-400">${finalM}</div></div><div class="text-[10px] text-slate-600">${new Date().toLocaleTimeString('th-TH')}</div>`;
                 const list = document.getElementById('history-list'); if (list.querySelector('p')) list.innerHTML = '';
                 list.prepend(div);
-                if (document.getElementById('remove-mode').checked) { names.splice(index, 1); namesInput.value = names.join('\n'); updateWheel(); }
+                if (document.getElementById('remove-mode').checked) { 
+                    names.splice(index, 1); 
+                    namesInput.value = names.join('\n'); 
+                    updateWheel(); 
+                }
             }, 1200);
             setTimeout(() => document.getElementById('result-modal').classList.add('opacity-100'), 10);
         }
@@ -357,48 +362,17 @@
             setTimeout(() => { m.classList.add('hidden'); window.speechSynthesis.cancel(); }, 300);
         }
 
-        // 4. ระบบคืนค่ารายชื่อ (ปรับปรุงให้รองรับ Local Backup)
-        document.getElementById('restore-btn').onclick = async () => {
+        // 4. คืนค่า
+        document.getElementById('restore-btn').onclick = () => {
             if (isSpinning) return;
-            let found = false;
-            if (db && user) {
-                try {
-                    const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'party_config', 'settings'));
-                    if (snap.exists()) { namesInput.value = snap.data().names.join('\n'); updateWheel(); found = true; }
-                } catch (e) { }
-            }
-            if (!found) {
-                const backup = localStorage.getItem('party_wheel_backup');
-                if (backup) { namesInput.value = JSON.parse(backup).join('\n'); updateWheel(); }
-            }
-        };
-
-        // 5. ระบบ Cloud (Silent)
-        const startFirebase = async () => {
-            try {
-                if (window.__firebase_config) {
-                    const config = JSON.parse(window.__firebase_config);
-                    const app = initializeApp(config);
-                    auth = getAuth(app); db = getFirestore(app);
-                    if (window.__initial_auth_token) { await signInWithCustomToken(auth, window.__initial_auth_token); } 
-                    else { await signInAnonymously(auth); }
-                    onAuthStateChanged(auth, async (u) => {
-                        user = u;
-                        if (user) {
-                            cloudStatus.textContent = "เชื่อมต่อ Cloud สำเร็จ ✅";
-                            const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'party_config', 'settings'));
-                            if (snap.exists()) { namesInput.value = snap.data().names.join('\n'); updateWheel(); }
-                        }
-                    });
-                } else { cloudStatus.textContent = "โหมดเล่นในเครื่อง 🏠"; }
-            } catch (e) { cloudStatus.textContent = "โหมดเล่นในเครื่อง 🏠"; }
+            const backup = localStorage.getItem('party_wheel_backup');
+            if (backup) { namesInput.value = JSON.parse(backup).join('\n'); updateWheel(); }
         };
 
         // เริ่มต้น
         const initialLoad = localStorage.getItem('party_wheel_backup');
         if (initialLoad) { namesInput.value = JSON.parse(initialLoad).join('\n'); }
         updateWheel();
-        startFirebase();
     </script>
 </body>
 </html>
