@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Party Wheel Pro - Best Edition</title>
+    <title>Party Wheel Pro - Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;700;900&display=swap" rel="stylesheet">
     <style>
@@ -30,9 +30,8 @@
         }
         .pointer-top {
             position: absolute;
-            top: -55px; /* ปรับตำแหน่งให้หัวขวดชี้ลงไปที่ขอบวงล้อพอดี */
+            top: -55px;
             left: 50%;
-            /* กลับหัวขวด 180 องศาให้หัวชี้ลง */
             transform: translateX(-50%) rotate(180deg);
             z-index: 50;
             filter: drop-shadow(0 -4px 8px rgba(0,0,0,0.5));
@@ -60,7 +59,7 @@
         <h1 class="text-3xl font-black italic tracking-tighter bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 bg-clip-text text-transparent uppercase">
             Party Wheel ✨
         </h1>
-        <p id="cloud-status" class="text-[10px] text-slate-500 italic mt-1 leading-none">กำลังโหลด...</p>
+        <p id="cloud-status" class="text-[10px] text-slate-500 italic mt-1 leading-none">พร้อมใช้งาน 🏠</p>
         
         <button id="mute-toggle-btn" class="absolute right-4 top-4 p-2 bg-white/5 rounded-full border border-white/10 active:scale-90 transition-all">
             <svg id="sound-icon-on" class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -103,19 +102,13 @@
         <div id="tab-wheel" class="tab-content active items-center justify-center gap-6 py-4">
             <div id="wheel-container">
                 <div class="pointer-top">
-                    <!-- SVG ขวดสีเขียว (หัวขวดชี้ลง) -->
                     <svg width="55" height="100" viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg">
-                        <!-- ตัวขวด -->
                         <path d="M30 60 C30 50 40 45 50 45 C60 45 70 50 70 60 L75 180 C75 190 65 195 50 195 C35 195 25 190 25 180 Z" fill="#2d5a27" stroke="#1a3a16" stroke-width="2"/>
-                        <!-- คอขวด -->
                         <rect x="42" y="10" width="16" height="40" rx="2" fill="#2d5a27" stroke="#1a3a16" stroke-width="2"/>
-                        <!-- ฝาขวด -->
                         <rect x="40" y="5" width="20" height="10" rx="1" fill="#c0a060" stroke="#8a7040" stroke-width="1"/>
-                        <!-- ฉลาก -->
                         <rect x="30" y="100" width="40" height="50" fill="#f0f0f0" rx="2"/>
                         <rect x="35" y="110" width="30" height="5" fill="#2d5a27" rx="1"/>
                         <rect x="35" y="120" width="20" height="3" fill="#888" rx="1"/>
-                        <!-- แสงเงาไฮไลท์ -->
                         <path d="M35 70 Q40 60 50 60" fill="none" stroke="white" stroke-width="2" opacity="0.3"/>
                     </svg>
                 </div>
@@ -168,7 +161,7 @@
         </button>
     </nav>
 
-    <!-- Modal ผู้โชคดี -->
+    <!-- Modal -->
     <div id="result-modal" class="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
         <div class="max-w-xs w-full mx-4 bg-slate-900 p-8 rounded-[2.5rem] border border-white/10 text-center transform scale-75 transition-transform duration-300 shadow-2xl">
             <div class="text-rose-500 text-xs font-bold tracking-widest mb-2 uppercase leading-none">ผู้โชคดีคือ!</div>
@@ -186,22 +179,15 @@
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- ระบบ Global UI ---
+        // --- ตั้งค่าเบื้องต้น ---
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'party-wheel-pro';
-        const firebaseConfig = JSON.parse(__firebase_config);
-        
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        let user = null;
-
-        const canvas = document.getElementById('wheel-canvas');
-        const ctx = canvas.getContext('2d');
+        const cloudStatus = document.getElementById('cloud-status');
         const namesInput = document.getElementById('names-input');
         const missionsInput = document.getElementById('missions-input');
+        const canvas = document.getElementById('wheel-canvas');
+        const ctx = canvas.getContext('2d');
         const spinBtn = document.getElementById('spin-button');
         const historyList = document.getElementById('history-list');
-        const cloudStatus = document.getElementById('cloud-status');
         const soundOnIcon = document.getElementById('sound-icon-on');
         const soundOffIcon = document.getElementById('sound-icon-off');
         const saveFeedback = document.getElementById('save-feedback');
@@ -211,32 +197,11 @@
         let isSpinning = false;
         let lastWinnerName = "";
         let isMuted = false;
+        let db, auth, user;
         const colors = ['#f43f5e', '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#6366f1', '#06b6d4'];
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        const initAuth = async () => {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else { await signInAnonymously(auth); }
-        };
-
-        onAuthStateChanged(auth, async (u) => {
-            user = u;
-            if (user) {
-                cloudStatus.textContent = "เชื่อมต่อสำเร็จ ✅";
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'party_settings', 'config');
-                try {
-                    const snap = await getDoc(docRef);
-                    if (snap.exists()) {
-                        namesInput.value = snap.data().names.join('\n');
-                        updateWheel();
-                    }
-                } catch (e) { }
-            }
-        });
-
-        initAuth();
-
+        // --- ฟังก์ชัน UI (ทำงานทันที) ---
         window.switchTab = (tabName) => {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.getElementById(`tab-${tabName}`).classList.add('active');
@@ -249,10 +214,10 @@
             activeNav.classList.remove('text-slate-500');
         };
 
+        // ผูกปุ่มกดทันที เพื่อให้หน้าตั้งค่าเปิดได้แม้ Firebase ไม่ทำงาน
         document.getElementById('nav-setup-btn').onclick = () => window.switchTab('setup');
         document.getElementById('nav-wheel-btn').onclick = () => window.switchTab('wheel');
         document.getElementById('nav-history-btn').onclick = () => window.switchTab('history');
-        
         document.getElementById('mute-toggle-btn').onclick = () => {
             isMuted = !isMuted;
             soundOnIcon.classList.toggle('hidden', isMuted);
@@ -260,22 +225,15 @@
             if (!isMuted && audioCtx.state === 'suspended') audioCtx.resume();
             if (isMuted) window.speechSynthesis.cancel();
         };
-
         document.getElementById('clear-btn').onclick = () => { namesInput.value = ""; updateWheel(); };
         document.getElementById('close-modal-btn').onclick = () => closeModal();
         document.getElementById('clear-history-btn').onclick = () => { historyList.innerHTML = '<p class="text-slate-600 text-center text-sm py-10">ยังไม่มีประวัติการสุ่ม</p>'; };
-        
         namesInput.oninput = () => updateWheel();
 
-        function speakThai(name, mission) {
+        // 1. ระบบเสียงพูด
+        function speakThai(text) {
             if (isMuted) return;
             window.speechSynthesis.cancel();
-            const phrases = [
-                `ว้าววว ยินดีด้วยนะคะคุณ ${name} ภารกิจคือ ${mission} ค่ะ`,
-                `โอ๊ะโอ คุณ ${name} โดนแล้ววว ภารกิจคือ ${mission} นะคะ`,
-                `ได้ผู้โชคดีแล้วค่ะ คุณ ${name} ต้อง ${mission} นะคะ สู้ๆ ค่ะ`
-            ];
-            const text = phrases[Math.floor(Math.random() * phrases.length)];
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'th-TH';
             utterance.pitch = 1.4;
@@ -283,22 +241,42 @@
             window.speechSynthesis.speak(utterance);
         }
 
+        // 2. ระบบคืนค่า และ บันทึก
         document.getElementById('save-btn').onclick = async () => {
             const currentList = namesInput.value.split('\n').filter(n => n.trim());
             updateWheel();
             localStorage.setItem('party_wheel_backup', JSON.stringify(currentList));
             
             saveFeedback.classList.remove('opacity-0');
-            if (user) {
+            if (!db || !user) {
+                saveFeedback.textContent = "บันทึกในเครื่องแล้ว ✅";
+            } else {
                 try {
                     const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'party_settings', 'config');
                     await setDoc(docRef, { names: currentList, updatedAt: new Date() });
                     saveFeedback.textContent = "บันทึก Cloud สำเร็จ ✅";
                 } catch (e) { saveFeedback.textContent = "บันทึกในเครื่องแล้ว ✅"; }
-            } else { saveFeedback.textContent = "บันทึกในเครื่องแล้ว ✅"; }
+            }
             setTimeout(() => saveFeedback.classList.add('opacity-0'), 3000);
         };
 
+        document.getElementById('restore-btn').onclick = async () => {
+            if (isSpinning) return;
+            const backup = localStorage.getItem('party_wheel_backup');
+            if (backup) {
+                namesInput.value = JSON.parse(backup).join('\n');
+                updateWheel();
+            } else if (db && user) {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'party_settings', 'config');
+                const snap = await getDoc(docRef);
+                if (snap.exists()) {
+                    namesInput.value = snap.data().names.join('\n');
+                    updateWheel();
+                }
+            }
+        };
+
+        // 3. วาดวงล้อ และ การสุ่ม
         function updateWheel() {
             names = namesInput.value.split('\n').map(n => n.trim()).filter(n => n !== "");
             draw();
@@ -320,22 +298,19 @@
                 ctx.arc(centerX, centerY, radius, start, start + slice); ctx.fill();
                 ctx.save(); ctx.translate(centerX, centerY); ctx.rotate(start + slice / 2); ctx.textAlign = "right"; ctx.fillStyle = "#fff";
                 let fontSize = names.length > 20 ? 48 : (names.length > 10 ? 76 : 115);
-                ctx.font = `900 ${fontSize}px Kanit`; 
-                ctx.shadowBlur = 15; ctx.shadowColor = "rgba(0,0,0,0.6)";
+                ctx.font = `900 ${fontSize}px Kanit`; ctx.shadowBlur = 15; ctx.shadowColor = "rgba(0,0,0,0.6)";
                 ctx.fillText(name.substring(0, 12), radius - 40, fontSize/3); ctx.restore();
             });
             ctx.fillStyle = "#020617"; ctx.beginPath(); ctx.arc(centerX, centerY, 50, 0, Math.PI * 2); ctx.fill();
             ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 8; ctx.stroke();
         }
 
-        document.getElementById('spin-button').onclick = () => {
+        spinBtn.onclick = () => {
             if (isSpinning || names.length === 0) return;
             isSpinning = true; spinBtn.disabled = true;
             if (audioCtx.state === 'suspended') audioCtx.resume();
-            if (!isMuted) {
-                const dummy = new SpeechSynthesisUtterance("");
-                window.speechSynthesis.speak(dummy);
-            }
+            if (!isMuted) window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
+
             const duration = 5000; const startRot = rotation;
             const extra = 15 + Math.random() * 10; const targetRot = startRot + (extra * Math.PI * 2);
             const startTime = performance.now(); let lastTick = 0;
@@ -359,10 +334,9 @@
                 else {
                     isSpinning = false; spinBtn.disabled = false;
                     const normalized = rotation % (Math.PI * 2);
-                    let idx = Math.floor(( (Math.PI * 1.5) - normalized ) / ((Math.PI * 2) / names.length)) % names.length;
+                    let idx = Math.floor(( (Math.PI * 1.5) - normalized ) / sliceAngle) % names.length;
                     if (idx < 0) idx += names.length;
-                    lastWinnerName = names[idx];
-                    showResult(lastWinnerName, idx);
+                    lastWinnerName = names[idx]; showResult(lastWinnerName, idx);
                 }
             }
             requestAnimationFrame(animate);
@@ -377,17 +351,12 @@
                 clearInterval(mInt);
                 const finalM = missions[Math.floor(Math.random() * missions.length)];
                 document.getElementById('winner-mission').textContent = finalM;
-                speakThai(name, finalM);
-                const div = document.createElement('div');
-                div.className = "bg-white/5 p-4 rounded-2xl border border-white/5 flex justify-between items-center";
+                speakThai(`ยินดีด้วยนะคะคุณ ${name} ภารกิจคือ ${finalM} ค่ะ`);
+                const div = document.createElement('div'); div.className = "bg-white/5 p-4 rounded-2xl border border-white/5 flex justify-between items-center";
                 div.innerHTML = `<div><div class="text-rose-400 font-bold">${name}</div><div class="text-xs text-slate-400">${finalM}</div></div><div class="text-[10px] text-slate-600">${new Date().toLocaleTimeString('th-TH')}</div>`;
                 const list = document.getElementById('history-list'); if (list.querySelector('p')) list.innerHTML = '';
                 list.prepend(div);
-                if (document.getElementById('remove-mode').checked) { 
-                    names.splice(index, 1); 
-                    namesInput.value = names.join('\n'); 
-                    updateWheel(); 
-                }
+                if (document.getElementById('remove-mode').checked) { names.splice(index, 1); namesInput.value = names.join('\n'); updateWheel(); }
             }, 1200);
             setTimeout(() => document.getElementById('result-modal').classList.add('opacity-100'), 10);
         }
@@ -397,18 +366,35 @@
             setTimeout(() => { m.classList.add('hidden'); window.speechSynthesis.cancel(); }, 300);
         }
 
-        document.getElementById('restore-btn').onclick = () => {
-            if (isSpinning) return;
-            const backup = localStorage.getItem('party_wheel_backup');
-            if (backup) {
-                namesInput.value = JSON.parse(backup).join('\n');
-                updateWheel();
-            }
+        // --- ระบบ Cloud (ทำงานแบบเงียบ ไม่ขวางหน้าจอ) ---
+        const startFirebase = async () => {
+            try {
+                if (typeof __firebase_config !== 'undefined') {
+                    const config = JSON.parse(__firebase_config);
+                    const fApp = initializeApp(config);
+                    auth = getAuth(fApp);
+                    db = getFirestore(fApp);
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else { await signInAnonymously(auth); }
+                    onAuthStateChanged(auth, async (u) => {
+                        user = u;
+                        if (user) {
+                            cloudStatus.textContent = "เชื่อมต่อสำเร็จ ✅";
+                            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'party_settings', 'config');
+                            const snap = await getDoc(docRef);
+                            if (snap.exists()) { namesInput.value = snap.data().names.join('\n'); updateWheel(); }
+                        }
+                    });
+                }
+            } catch (e) { console.log("Local Mode Activated"); }
         };
 
+        // เริ่มต้น
         const initialLoad = localStorage.getItem('party_wheel_backup');
         if (initialLoad) { namesInput.value = JSON.parse(initialLoad).join('\n'); }
         updateWheel();
+        startFirebase();
     </script>
 </body>
 </html>
