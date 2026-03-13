@@ -50,9 +50,6 @@
         
         .nav-btn.active { color: #f43f5e; }
         .nav-btn.active div { background: rgba(244, 63, 94, 0.2); }
-        
-        /* ซ่อนส่วน Cloud เมื่อไม่ใช้งาน */
-        .cloud-only { display: none; }
     </style>
 </head>
 <body class="flex flex-col">
@@ -61,7 +58,7 @@
         <h1 class="text-3xl font-black italic tracking-tighter bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 bg-clip-text text-transparent uppercase">
             Party Wheel ✨
         </h1>
-        <p id="cloud-status" class="text-[10px] text-slate-500 italic mt-1 leading-none"></p>
+        <p id="cloud-status" class="text-[10px] text-slate-500 italic mt-1 leading-none">พร้อมใช้งาน</p>
         
         <button id="mute-toggle-btn" class="absolute right-4 top-4 p-2 bg-white/5 rounded-full border border-white/10 active:scale-90 transition-all">
             <svg id="sound-icon-on" class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -82,9 +79,10 @@
                 <h2 class="text-lg font-bold mb-3 flex items-center gap-2 text-rose-400">👥 รายชื่อนักดื่ม</h2>
                 <textarea id="names-input" class="w-full h-44 bg-black/40 border border-white/10 rounded-2xl p-4 text-white focus:ring-2 focus:ring-rose-500 focus:outline-none transition-all resize-none text-sm" placeholder="พิมพ์ชื่อคนละ 1 บรรทัดที่นี่..."></textarea>
                 <div class="mt-3 flex gap-2">
-                    <button id="save-btn" class="cloud-only flex-1 bg-indigo-600 active:bg-indigo-700 py-3 rounded-xl text-sm font-bold transition-all uppercase shadow-lg shadow-indigo-900/20">💾 บันทึก Cloud</button>
-                    <button id="clear-btn" class="flex-1 bg-slate-800 active:bg-slate-700 rounded-xl text-sm font-bold transition-all">ล้างชื่อทั้งหมด</button>
+                    <button id="save-btn" class="flex-1 bg-indigo-600 active:bg-indigo-700 py-3 rounded-xl text-sm font-bold transition-all uppercase shadow-lg shadow-indigo-900/20">💾 บันทึก Cloud</button>
+                    <button id="clear-btn" class="px-6 bg-slate-800 active:bg-slate-700 rounded-xl text-sm font-bold transition-all">ล้างชื่อ</button>
                 </div>
+                <p class="text-[10px] text-slate-500 mt-2 italic">* หากใช้บน GitHub ต้องใส่ Config เองถึงจะใช้ระบบ Cloud ได้</p>
             </div>
 
             <div class="bg-slate-900/60 p-5 rounded-3xl border border-white/5">
@@ -120,10 +118,10 @@
 
                 <div class="flex items-center justify-between px-6 py-3 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-sm">
                     <span class="text-sm font-bold text-slate-300">ตัดชื่อคนโดนออก</span>
-                    <input type="checkbox" id="remove-mode" class="w-6 h-6 accent-rose-500 rounded-lg">
+                    <input type="checkbox" id="remove-mode" class="w-6 h-6 accent-rose-500 rounded-lg cursor-pointer">
                 </div>
 
-                <button id="restore-btn" class="cloud-only w-full py-3 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-2xl text-sm font-bold border border-white/5 active:scale-95 transition-all">
+                <button id="restore-btn" class="w-full py-3 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-2xl text-sm font-bold border border-white/5 active:scale-95 transition-all">
                     🔄 คืนค่ารายชื่อล่าสุด
                 </button>
             </div>
@@ -181,11 +179,11 @@
         // --- ตั้งค่า Gemini API Key ---
         const apiKey = ""; 
 
-        // --- UI Logic (ทำงานทันที) ---
-        const namesInput = document.getElementById('names-input');
-        const missionsInput = document.getElementById('missions-input');
+        // --- ระบบ UI ---
         const canvas = document.getElementById('wheel-canvas');
         const ctx = canvas.getContext('2d');
+        const namesInput = document.getElementById('names-input');
+        const missionsInput = document.getElementById('missions-input');
         const spinBtn = document.getElementById('spin-button');
         const historyList = document.getElementById('history-list');
         const cloudStatus = document.getElementById('cloud-status');
@@ -197,10 +195,12 @@
         let isSpinning = false;
         let lastWinnerName = "";
         let isMuted = false;
+        let db, auth, user;
+        const appId = 'party-wheel-prod';
         const colors = ['#f43f5e', '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#6366f1', '#06b6d4'];
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        // ฟังก์ชันสลับหน้า (ประกาศ Global เพื่อให้แน่ใจว่าเรียกใช้ได้)
+        // ฟังก์ชันสลับหน้า (เรียกใช้งานได้ทันที)
         window.switchTab = (tabName) => {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.getElementById(`tab-${tabName}`).classList.add('active');
@@ -213,7 +213,7 @@
             activeNav.classList.remove('text-slate-500');
         };
 
-        // ผูกปุ่มกดทันที
+        // ผูกปุ่มกดพื้นฐาน
         document.getElementById('nav-setup-btn').onclick = () => window.switchTab('setup');
         document.getElementById('nav-wheel-btn').onclick = () => window.switchTab('wheel');
         document.getElementById('nav-history-btn').onclick = () => window.switchTab('history');
@@ -223,12 +223,17 @@
             soundOffIcon.classList.toggle('hidden', !isMuted);
             if (!isMuted && audioCtx.state === 'suspended') audioCtx.resume();
         };
+        document.getElementById('clear-btn').onclick = () => { namesInput.value = ""; updateWheel(); };
+        document.getElementById('close-modal-btn').onclick = () => closeModal();
+        document.getElementById('clear-history-btn').onclick = () => { historyList.innerHTML = '<p class="text-slate-600 text-center text-sm py-10">ยังไม่มีประวัติการสุ่ม</p>'; };
+        namesInput.oninput = () => updateWheel();
+        spinBtn.onclick = () => spinWheelAction();
 
-        const updateWheel = () => {
+        // วาดวงล้อ
+        function updateWheel() {
             names = namesInput.value.split('\n').map(n => n.trim()).filter(n => n !== "");
             draw();
-        };
-        namesInput.oninput = updateWheel;
+        }
 
         function draw() {
             const centerX = 500, centerY = 500, radius = 460;
@@ -252,7 +257,8 @@
             ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 8; ctx.stroke();
         }
 
-        spinBtn.onclick = () => {
+        // การสุ่ม
+        function spinWheelAction() {
             if (isSpinning || names.length === 0) return;
             isSpinning = true; spinBtn.disabled = true;
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -279,14 +285,14 @@
                 else {
                     isSpinning = false; spinBtn.disabled = false;
                     const normalized = rotation % (Math.PI * 2);
-                    let idx = Math.floor(( (Math.PI * 1.5) - normalized ) / ( (Math.PI * 2) / names.length )) % names.length;
+                    let idx = Math.floor(( (Math.PI * 1.5) - normalized ) / sliceAngle) % names.length;
                     if (idx < 0) idx += names.length;
                     lastWinnerName = names[idx];
                     showResult(lastWinnerName, idx);
                 }
             }
             requestAnimationFrame(animate);
-        };
+        }
 
         function showResult(name, index) {
             document.getElementById('winner-name').textContent = name;
@@ -309,46 +315,36 @@
             setTimeout(() => { document.getElementById('result-modal').classList.add('opacity-100'); }, 10);
         }
 
-        document.getElementById('close-modal-btn').onclick = () => {
+        function closeModal() {
             const m = document.getElementById('result-modal'); m.classList.remove('opacity-100');
             setTimeout(() => { m.classList.add('hidden'); }, 300);
-        };
+        }
 
-        document.getElementById('clear-btn').onclick = () => { namesInput.value = ""; updateWheel(); };
-        document.getElementById('clear-history-btn').onclick = () => { historyList.innerHTML = '<p class="text-slate-600 text-center text-sm py-10">ยังไม่มีประวัติการสุ่ม</p>'; };
-
-        // --- ระบบ Cloud (ทำงานแบบ Silent) ---
-        let db, auth, user;
-        const appId = 'party-wheel-prod';
-
+        // --- ระบบ Cloud (ทำงานแบบเงียบ) ---
         const startCloud = async () => {
             try {
-                // ตรวจสอบ config แบบปลอดภัยโดยไม่ใช้ ReferenceError
                 if (window.__firebase_config) {
                     const config = JSON.parse(window.__firebase_config);
                     const app = initializeApp(config);
                     auth = getAuth(app);
                     db = getFirestore(app);
-                    
                     if (window.__initial_auth_token) {
                         await signInWithCustomToken(auth, window.__initial_auth_token);
                     } else { await signInAnonymously(auth); }
-
                     onAuthStateChanged(auth, async (u) => {
                         user = u;
                         if (user) {
-                            // แสดงปุ่ม Cloud ทันทีที่มีการเชื่อมต่อ
-                            document.querySelectorAll('.cloud-only').forEach(el => el.style.display = 'block');
+                            cloudStatus.textContent = "เชื่อมต่อระบบ Cloud แล้ว ✅";
                             const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'party_config', 'settings'));
                             if (snap.exists()) { namesInput.value = snap.data().names.join('\n'); updateWheel(); }
                         }
                     });
                 }
-            } catch (e) { console.log("Firebase not configured."); }
+            } catch (e) { }
         };
 
         document.getElementById('save-btn').onclick = async () => {
-            if (!db || !user) return;
+            if (!db || !user) { alert("ระบบ Cloud ยังไม่พร้อม (ต้องตั้งค่า Firebase Config ในโค้ดก่อน)"); return; }
             try {
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'party_config', 'settings'), {
                     names: namesInput.value.split('\n').filter(n => n.trim()),
@@ -356,7 +352,7 @@
                 });
                 cloudStatus.textContent = "บันทึกเรียบร้อย ✅";
                 setTimeout(() => cloudStatus.textContent = "", 3000);
-            } catch (e) {}
+            } catch (e) { }
         };
 
         document.getElementById('restore-btn').onclick = async () => {
@@ -364,7 +360,7 @@
             try {
                 const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'party_config', 'settings'));
                 if (snap.exists()) { namesInput.value = snap.data().names.join('\n'); updateWheel(); }
-            } catch (e) {}
+            } catch (e) { }
         };
 
         document.getElementById('ai-btn').onclick = async () => {
