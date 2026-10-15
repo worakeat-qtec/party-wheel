@@ -42,10 +42,15 @@
             position: absolute;
             top: -55px;
             left: 50%;
+            transform-origin: 50% 15px;
             transform: translateX(-50%) rotate(180deg);
             z-index: 50;
             filter: drop-shadow(0 -4px 8px rgba(0,0,0,0.5));
             pointer-events: none;
+            transition: transform 0.04s cubic-bezier(0.1, 0.9, 0.2, 1);
+        }
+        .pointer-top.tick {
+            transform: translateX(-50%) rotate(196deg) scale(1.08);
         }
         .tab-content {
             display: none;
@@ -152,7 +157,7 @@
         <!-- Tab 2: Wheel -->
         <div id="tab-wheel" class="tab-content active items-center justify-center gap-6 py-4">
             <div id="wheel-container">
-                <div class="pointer-top">
+                <div id="pointer-bottle" class="pointer-top">
                     <!-- SVG Green Bottle Pointer -->
                     <svg width="55" height="100" viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg">
                         <path d="M30 60 C30 50 40 45 50 45 C60 45 70 50 70 60 L75 180 C75 190 65 195 50 195 C35 195 25 190 25 180 Z" fill="#2d5a27" stroke="#1a3a16" stroke-width="2"/>
@@ -638,6 +643,81 @@
             }
         }
 
+        const pointerEl = document.getElementById('pointer-bottle');
+
+        // เสียงฟันเฟืองวงล้อหมุน: คมชัด ดังขึ้น 4 เท่า และหนักแน่นขึ้นช่วงปลายเพื่อสร้างความลุ้นระทึก
+        function playWheelTick(progress) {
+            if (isMuted) return;
+            const now = audioCtx.currentTime;
+
+            // 1. เสียงเคาะเนื้อไม้/ฟันเฟือง (Body Knock) - ยิ่งช้าจะยิ่งทุ้มหนัก เพิ่มความตื่นเต้น
+            const bodyOsc = audioCtx.createOscillator();
+            const bodyGain = audioCtx.createGain();
+            bodyOsc.type = 'triangle';
+            const baseFreq = 650 - (progress * 280);
+            bodyOsc.frequency.setValueAtTime(baseFreq * 1.6, now);
+            bodyOsc.frequency.exponentialRampToValueAtTime(baseFreq * 0.45, now + 0.045);
+
+            const vol = 0.30 + (progress * 0.18);
+            bodyGain.gain.setValueAtTime(vol, now);
+            bodyGain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+
+            bodyOsc.connect(bodyGain);
+            bodyGain.connect(audioCtx.destination);
+            bodyOsc.start(now);
+            bodyOsc.stop(now + 0.045);
+
+            // 2. เสียงดีดหัวเข็ม/ก้านพลาสติกกระทบหลัก (Mechanical Click Transient)
+            const clickOsc = audioCtx.createOscillator();
+            const clickGain = audioCtx.createGain();
+            clickOsc.type = 'sawtooth';
+            clickOsc.frequency.setValueAtTime(1400 - (progress * 350), now);
+            clickOsc.frequency.exponentialRampToValueAtTime(180, now + 0.02);
+
+            clickGain.gain.setValueAtTime(0.25, now);
+            clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.02);
+
+            clickOsc.connect(clickGain);
+            clickGain.connect(audioCtx.destination);
+            clickOsc.start(now);
+            clickOsc.stop(now + 0.02);
+        }
+
+        function animatePointerBounce() {
+            if (!pointerEl) return;
+            pointerEl.classList.add('tick');
+            setTimeout(() => pointerEl.classList.remove('tick'), 40);
+        }
+
+        // เสียงชัยชนะ Ta-da! (Fanfare) ตอนวงล้อหยุด เพื่อเปิดตัวผู้ชนะ
+        function playWinSound() {
+            if (isMuted) return;
+            const now = audioCtx.currentTime;
+            const fanfare = [
+                { f: 523.25, t: 0.00, d: 0.20 },
+                { f: 659.25, t: 0.08, d: 0.22 },
+                { f: 783.99, t: 0.16, d: 0.26 },
+                { f: 1046.5, t: 0.24, d: 0.65 }
+            ];
+            fanfare.forEach(n => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(n.f, now + n.t);
+
+                const start = now + n.t;
+                const end = start + n.d;
+                gain.gain.setValueAtTime(0, start);
+                gain.gain.linearRampToValueAtTime(0.35, start + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001, end);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(start);
+                osc.stop(end);
+            });
+        }
+
         // แตะวงล้อเพื่อหมุน (แทนปุ่ม Spin)
         canvas.onclick = () => {
             if (isSpinning) return;
@@ -657,24 +737,20 @@
                 const eased = 1 - Math.pow(1 - progress, 5); rotation = startRot + (targetRot - startRot) * eased;
                 const sliceAngle = (Math.PI * 2) / names.length;
                 if (Math.floor(rotation / (sliceAngle / 1)) !== lastTick) {
-                    if (!isMuted) {
-                        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-                        osc.connect(gain); gain.connect(audioCtx.destination);
-                        osc.frequency.setValueAtTime(800 - (progress * 200), audioCtx.currentTime);
-                        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-                        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
-                        osc.start(); osc.stop(audioCtx.currentTime + 0.1);
-                    }
+                    playWheelTick(progress);
+                    animatePointerBounce();
                     lastTick = Math.floor(rotation / (sliceAngle / 1));
                 }
                 draw();
                 if (progress < 1) requestAnimationFrame(animate);
                 else {
                     isSpinning = false; canvas.classList.remove('spinning'); draw();
+                    playWinSound();
                     const normalized = rotation % (Math.PI * 2);
                     let idx = Math.floor(( (Math.PI * 1.5) - normalized ) / ((Math.PI * 2) / names.length)) % names.length;
                     if (idx < 0) idx += names.length;
-                    lastWinnerName = names[idx]; showResult(lastWinnerName, idx);
+                    lastWinnerName = names[idx];
+                    setTimeout(() => showResult(lastWinnerName, idx), 350);
                 }
             }
             requestAnimationFrame(animate);
