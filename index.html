@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- ไม่ส่ง Referer: เสียงออนไลน์ของ Google จะตอบ 404 ถ้ามี Referer -->
+    <meta name="referrer" content="no-referrer">
     <title>Party Wheel Pro - Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;700;900&display=swap" rel="stylesheet">
@@ -27,7 +29,15 @@
         #wheel-canvas {
             width: 100%;
             height: 100%;
+            cursor: pointer;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            transition: transform 0.15s ease;
         }
+        #wheel-canvas:active { transform: scale(0.97); }
+        #wheel-canvas.spinning { cursor: default; }
+        #wheel-canvas.spinning:active { transform: none; }
         .pointer-top {
             position: absolute;
             top: -55px;
@@ -96,6 +106,47 @@
 คนข้างขวาดื่ม
 กินกับแกล้ม</textarea>
             </div>
+
+            <div class="bg-slate-900/60 p-5 rounded-3xl border border-white/5 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-lg font-bold flex items-center gap-2 text-emerald-400">🔊 เสียงพากย์</h2>
+                    <span id="voice-indicator" class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold">กำลังตรวจหาเสียง...</span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">เลือกเสียง</label>
+                    <select id="voice-select" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"></select>
+                </div>
+
+                <!-- ปรับแต่งความเร็ว และ โทนเสียง -->
+                <div class="grid grid-cols-2 gap-3 pt-1">
+                    <div class="bg-white/5 p-3 rounded-2xl border border-white/5">
+                        <div class="flex justify-between items-center text-xs mb-1">
+                            <span class="text-slate-300 font-bold">⚡ ความเร็ว</span>
+                            <span id="voice-rate-val" class="text-emerald-400 font-mono font-bold">1.0x</span>
+                        </div>
+                        <input type="range" id="voice-rate" min="0.8" max="1.3" step="0.05" value="1.0" class="w-full accent-emerald-500 cursor-pointer">
+                    </div>
+
+                    <div class="bg-white/5 p-3 rounded-2xl border border-white/5">
+                        <div class="flex justify-between items-center text-xs mb-1">
+                            <span class="text-slate-300 font-bold">🎵 โทนเสียง</span>
+                            <span id="voice-pitch-val" class="text-emerald-400 font-mono font-bold">1.0</span>
+                        </div>
+                        <input type="range" id="voice-pitch" min="0.8" max="1.2" step="0.05" value="1.0" class="w-full accent-emerald-500 cursor-pointer">
+                    </div>
+                </div>
+
+                <button id="test-voice-btn" class="w-full bg-emerald-600 active:bg-emerald-700 py-3 rounded-xl text-sm font-bold transition-all shadow-lg shadow-emerald-900/20">▶️ ทดสอบเสียงพากย์</button>
+                <p id="voice-status" class="text-[11px] text-center text-slate-400">กำลังโหลดเสียง...</p>
+
+                <!-- คำแนะนำการใช้งานเสียงธรรมชาติ -->
+                <div class="bg-indigo-950/40 border border-indigo-500/20 rounded-2xl p-3 text-[11px] text-indigo-200/90 space-y-1 leading-relaxed">
+                    <div class="font-bold text-indigo-300 flex items-center gap-1">💡 คำแนะนำเพื่อเสียงที่สมจริงเหมือนคนพูด:</div>
+                    <p>• 📱 <b>บนมือถือ (iPhone / Android):</b> ตัวเครื่องจะมีเสียง Siri หรือ Google Thai ที่เป็นเสียงคนจริงอยู่แล้ว เสียงจะลื่นไหลเป็นธรรมชาติมาก</p>
+                    <p>• 💻 <b>บนคอมพิวเตอร์:</b> แนะนำให้เปิดด้วย <b>Microsoft Edge</b> จะมีเสียงไทย <i>Premwadee / Niwat (Natural)</i> ซึ่งเป็นเสียง AI ระดับสตูดิโอให้เลือกทันที</p>
+                </div>
+            </div>
         </div>
 
         <!-- Tab 2: Wheel -->
@@ -113,13 +164,10 @@
                         <path d="M35 70 Q40 60 50 60" fill="none" stroke="white" stroke-width="2" opacity="0.3"/>
                     </svg>
                 </div>
-                <canvas id="wheel-canvas" width="1000" height="1000"></canvas>
+                <canvas id="wheel-canvas" width="1000" height="1000" role="button" aria-label="แตะเพื่อหมุนวงล้อ"></canvas>
             </div>
 
             <div class="w-full max-w-[300px] flex flex-col gap-4">
-                <button id="spin-button" class="w-full py-6 bg-gradient-to-r from-rose-600 to-pink-500 rounded-full font-black text-3xl uppercase tracking-widest shadow-[0_10px_40px_rgba(244,63,94,0.4)] active:scale-90 transition-all disabled:opacity-50">
-                    Spin!
-                </button>
 
                 <div class="flex items-center justify-between px-6 py-3 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-sm">
                     <span class="text-sm font-bold text-slate-300">🍺 ใช้ภารกิจ</span>
@@ -204,7 +252,6 @@
         const ctx = canvas.getContext('2d');
         const namesInput = document.getElementById('names-input');
         const missionsInput = document.getElementById('missions-input');
-        const spinBtn = document.getElementById('spin-button');
         const historyList = document.getElementById('history-list');
         const cloudStatus = document.getElementById('cloud-status');
         const soundOnIcon = document.getElementById('sound-icon-on');
@@ -234,62 +281,308 @@
             soundOnIcon.classList.toggle('hidden', isMuted);
             soundOffIcon.classList.toggle('hidden', !isMuted);
             if (!isMuted && audioCtx.state === 'suspended') audioCtx.resume();
-            if (isMuted) window.speechSynthesis.cancel();
+            if (isMuted) stopSpeech();
         };
         document.getElementById('clear-btn').onclick = () => { namesInput.value = ""; updateWheel(); };
         document.getElementById('close-modal-btn').onclick = () => closeModal();
         document.getElementById('clear-history-btn').onclick = () => { historyList.innerHTML = '<p class="text-slate-600 text-center text-sm py-10">ยังไม่มีประวัติการสุ่ม</p>'; };
         namesInput.oninput = () => updateWheel();
 
-        // 2. ฟังก์ชันเสียงพูด (Cute & Playful - แก้ไขให้ชัวร์ขึ้น)
-        let thaiVoice = null;
+        // 2. ระบบเสียงพากย์ภาษาไทย
+        //    ลำดับความสำคัญ:
+        //    1) ✨ เสียง AI (Google Cloud TTS Chirp 3 HD ผ่าน Cloudflare Worker) - เหมือนคนจริง
+        //    2) 🗣️ เสียงไทยในเครื่อง (Edge Natural > Google > Kanya/Narisa > อื่นๆ)
+        //    3) 🌐 เสียงออนไลน์ (Google Translate TTS) - สำรอง
+        //    ใส่ URL ของ Cloudflare Worker ตรงนี้ (ไม่ใช่ความลับ คีย์จริงซ่อนอยู่ใน Worker)
+        const AI_TTS_URL = '';
+        const AI_VOICES = [
+            ['th-TH-Chirp3-HD-Aoede', 'หญิง - Aoede'],
+            ['th-TH-Chirp3-HD-Kore', 'หญิง - Kore'],
+            ['th-TH-Chirp3-HD-Leda', 'หญิง - Leda'],
+            ['th-TH-Chirp3-HD-Zephyr', 'หญิง - Zephyr'],
+            ['th-TH-Chirp3-HD-Puck', 'ชาย - Puck'],
+            ['th-TH-Chirp3-HD-Charon', 'ชาย - Charon'],
+            ['th-TH-Chirp3-HD-Fenrir', 'ชาย - Fenrir'],
+        ];
+        const AI_PREFIX = 'ai:';
+        const ONLINE_VOICE = '__online__';
+
+        const synth = window.speechSynthesis || null;
+        const voiceSelect = document.getElementById('voice-select');
+        const voiceStatus = document.getElementById('voice-status');
+        const voiceIndicator = document.getElementById('voice-indicator');
+        const voiceRateInput = document.getElementById('voice-rate');
+        const voicePitchInput = document.getElementById('voice-pitch');
+        const voiceRateVal = document.getElementById('voice-rate-val');
+        const voicePitchVal = document.getElementById('voice-pitch-val');
+
+        let voiceRate = parseFloat(localStorage.getItem('party_wheel_voice_rate')) || 1.0;
+        let voicePitch = parseFloat(localStorage.getItem('party_wheel_voice_pitch')) || 1.0;
+
+        if (voiceRateInput) {
+            voiceRateInput.value = voiceRate;
+            voiceRateVal.textContent = voiceRate.toFixed(2) + 'x';
+            voiceRateInput.oninput = () => {
+                voiceRate = parseFloat(voiceRateInput.value);
+                voiceRateVal.textContent = voiceRate.toFixed(2) + 'x';
+                localStorage.setItem('party_wheel_voice_rate', voiceRate);
+            };
+        }
+
+        if (voicePitchInput) {
+            voicePitchInput.value = voicePitch;
+            voicePitchVal.textContent = voicePitch.toFixed(2);
+            voicePitchInput.oninput = () => {
+                voicePitch = parseFloat(voicePitchInput.value);
+                voicePitchVal.textContent = voicePitch.toFixed(2);
+                localStorage.setItem('party_wheel_voice_pitch', voicePitch);
+            };
+        }
+
+        const ttsAudio = new Audio();
+        let thaiVoices = [];
+        let voiceSignature = null;
+        let selectedVoiceKey = localStorage.getItem('party_wheel_voice') || '';
+        let audioQueue = [];
+        let audioPlaying = false;
+        let audioToken = 0;
+        let audioUnlocked = false;
+
+        const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+        const voiceKey = (v) => v.voiceURI || v.name;
+        const isAiVoice = () => !!AI_TTS_URL && selectedVoiceKey.startsWith(AI_PREFIX);
+        const googleTtsUrl = (text) => `https://translate.google.com/translate_tts?ie=UTF-8&tl=th&client=tw-ob&q=${encodeURIComponent(text)}`;
+
+        function voiceScore(v) {
+            const n = v.name.toLowerCase();
+            if (/premwadee|niwat|natural|online/.test(n)) return 4;
+            if (n.includes('google')) return 3;
+            if (/kanya|narisa|pattara/.test(n)) return 2;
+            return 1;
+        }
+
+        function updateVoiceIndicator() {
+            if (!voiceIndicator) return;
+            if (isAiVoice()) {
+                voiceIndicator.textContent = '✨ เสียง AI';
+                voiceIndicator.className = 'text-[10px] px-2 py-0.5 rounded-full bg-fuchsia-500/20 text-fuchsia-300 font-bold';
+            } else if (selectedVoiceKey === ONLINE_VOICE) {
+                voiceIndicator.textContent = '🌐 สำรองออนไลน์';
+                voiceIndicator.className = 'text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold';
+            } else {
+                const cur = thaiVoices.find(v => voiceKey(v) === selectedVoiceKey);
+                const isNatural = cur && /natural|siri|google/i.test(cur.name);
+                voiceIndicator.textContent = isNatural ? '✨ เสียงธรรมชาติ' : '🗣️ เสียงในเครื่อง';
+                voiceIndicator.className = 'text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold';
+            }
+        }
+
+        function voiceStatusText() {
+            if (isAiVoice()) return 'ใช้เสียง AI เหมือนคนจริง ✨';
+            if (selectedVoiceKey === ONLINE_VOICE) return 'ใช้เสียงสำรองออนไลน์ 🌐 (บนมือถือหรือ Edge จะเป็นเสียงคนจริง)';
+            const cur = thaiVoices.find(v => voiceKey(v) === selectedVoiceKey);
+            return `ใช้เสียงไทยในเครื่อง: ${cur ? cur.name : ''} 🗣️ (พบ ${thaiVoices.length} เสียง)`;
+        }
+
         function loadVoices() {
-            const voices = window.speechSynthesis.getVoices();
-            thaiVoice = voices.find(v => v.lang.includes('th') && (v.name.includes('Female') || v.name.includes('Kanya') || v.name.includes('Google') || v.name.includes('Narisa')));
+            const all = synth ? synth.getVoices() : [];
+            thaiVoices = all
+                .filter(v => (v.lang || '').toLowerCase().replace('_', '-').startsWith('th'))
+                .sort((a, b) => voiceScore(b) - voiceScore(a));
+            const sig = thaiVoices.map(voiceKey).join('|');
+            if (sig === voiceSignature) return;
+            voiceSignature = sig;
+
+            voiceSelect.innerHTML = '';
+            if (AI_TTS_URL) {
+                const g = document.createElement('optgroup'); g.label = '✨ เสียง AI (เหมือนคนจริง)';
+                AI_VOICES.forEach(([id, label]) => g.appendChild(new Option(`✨ ${label}`, AI_PREFIX + id)));
+                voiceSelect.appendChild(g);
+            }
+            if (thaiVoices.length) {
+                const g = document.createElement('optgroup'); g.label = '🗣️ เสียงในเครื่อง';
+                thaiVoices.forEach(v => g.appendChild(new Option(`🗣️ ${v.name}`, voiceKey(v))));
+                voiceSelect.appendChild(g);
+            }
+            voiceSelect.add(new Option('🌐 เสียงออนไลน์ (Google Translate)', ONLINE_VOICE));
+
+            const keys = [...voiceSelect.options].map(o => o.value);
+            if (!keys.includes(selectedVoiceKey)) {
+                selectedVoiceKey = AI_TTS_URL ? AI_PREFIX + AI_VOICES[0][0]
+                    : (thaiVoices.length ? voiceKey(thaiVoices[0]) : ONLINE_VOICE);
+            }
+            voiceSelect.value = selectedVoiceKey;
+            voiceStatus.textContent = voiceStatusText();
+            updateVoiceIndicator();
         }
-        window.speechSynthesis.onvoiceschanged = loadVoices;
+
+        if (synth) synth.onvoiceschanged = loadVoices;
         loadVoices();
+        // บางเบราว์เซอร์ (มือถือ) โหลดรายชื่อเสียงช้า ลองซ้ำอีกสักพัก
+        let voiceTries = 0;
+        const voiceTimer = setInterval(() => { loadVoices(); if (thaiVoices.length || ++voiceTries > 10) clearInterval(voiceTimer); }, 500);
 
-        function speakThaiMission(mission) {
-            if (isMuted || !window.speechSynthesis) return;
-            
-            window.speechSynthesis.cancel();
-            
-            const intros = [
-                `ว้าววว! ภารกิจรอบนี้คือ ${mission} ค่ะ เริ่มเลยยย`,
-                `อุ๊ย! ได้ ${mission} นะคะ ห้ามเบี้ยวเด็ดขาด`,
-                `เย้! ต้อง ${mission} ค่ะ จัดไปเลยยย`,
-                `ภารกิจคือ ${mission} นะคะ สู้ๆ ค่ะ`
-            ];
-            const text = intros[Math.floor(Math.random() * intros.length)];
-            
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'th-TH';
-            utterance.pitch = 1.6; 
-            utterance.rate = 1.1; 
-            utterance.volume = 1.0;
+        voiceSelect.onchange = () => {
+            selectedVoiceKey = voiceSelect.value;
+            localStorage.setItem('party_wheel_voice', selectedVoiceKey);
+            voiceStatus.textContent = voiceStatusText();
+            updateVoiceIndicator();
+        };
 
-            if (thaiVoice) utterance.voice = thaiVoice;
-            window.speechSynthesis.speak(utterance);
+        // --- เสียง AI: ดึงไฟล์เสียงจาก Worker และเก็บแคชไว้ (ชื่อ/ภารกิจซ้ำไม่ต้องโหลดใหม่) ---
+        const aiClipCache = new Map();
+        function fetchAiClip(text) {
+            const voice = selectedVoiceKey.slice(AI_PREFIX.length);
+            const key = `${voice}|${text}`;
+            if (!aiClipCache.has(key)) {
+                const p = fetch(`${AI_TTS_URL.replace(/\/$/, '')}/?voice=${encodeURIComponent(voice)}&text=${encodeURIComponent(text)}`)
+                    .then(r => { if (!r.ok) throw new Error(`AI TTS ${r.status}`); return r.blob(); })
+                    .then(b => URL.createObjectURL(b));
+                p.catch(() => aiClipCache.delete(key));
+                aiClipCache.set(key, p);
+            }
+            return aiClipCache.get(key);
         }
 
-        function speakThaiName(name) {
-            if (isMuted || !window.speechSynthesis) return;
-            window.speechSynthesis.cancel();
-            const intros = [
-                `ว้าววว! รอบนี้ได้ ${name} ค่ะ`,
-                `อุ๊ย! ${name} โดนแล้วค่ะ`,
-                `เย้! ผู้โชคดีคือ ${name} ค่ะ`,
-                `ตาของ ${name} แล้วนะคะ`
-            ];
-            const utterance = new SpeechSynthesisUtterance(intros[Math.floor(Math.random() * intros.length)]);
-            utterance.lang = 'th-TH';
-            utterance.pitch = 1.6;
-            utterance.rate = 1.1;
-            utterance.volume = 1.0;
-            if (thaiVoice) utterance.voice = thaiVoice;
-            window.speechSynthesis.speak(utterance);
+        // โหลดเสียงล่วงหน้าระหว่างวงล้อหมุน จะได้พูดทันทีที่หยุด
+        function prefetchSpeech(texts) {
+            if (isMuted || !isAiVoice()) return;
+            texts.filter(Boolean).forEach(t => fetchAiClip(t).catch(() => {}));
         }
+
+        // ไฟล์เสียงเงียบสั้นๆ ใช้ "ปลดล็อก" การเล่นเสียงบน iOS ตอนผู้ใช้แตะ
+        function silentWavUrl() {
+            const sr = 8000, n = 400, buf = new ArrayBuffer(44 + n), d = new DataView(buf);
+            const w = (o, s) => { for (let i = 0; i < s.length; i++) d.setUint8(o + i, s.charCodeAt(i)); };
+            w(0, 'RIFF'); d.setUint32(4, 36 + n, true); w(8, 'WAVE'); w(12, 'fmt ');
+            d.setUint32(16, 16, true); d.setUint16(20, 1, true); d.setUint16(22, 1, true);
+            d.setUint32(24, sr, true); d.setUint32(28, sr, true); d.setUint16(32, 1, true); d.setUint16(34, 8, true);
+            w(36, 'data'); d.setUint32(40, n, true);
+            for (let i = 0; i < n; i++) d.setUint8(44 + i, 128);
+            return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+        }
+        const SILENT_WAV = silentWavUrl();
+
+        // เรียกตอนผู้ใช้แตะ (เบราว์เซอร์มือถือจะยอมให้เล่นเสียงทีหลังได้)
+        function unlockSpeech() {
+            if (isMuted) return;
+            if (synth) {
+                synth.cancel();
+                const u = new SpeechSynthesisUtterance(' ');
+                u.volume = 0;
+                synth.speak(u);
+            }
+            if (!audioUnlocked && !audioPlaying) {
+                ttsAudio.src = SILENT_WAV;
+                ttsAudio.play().then(() => { audioUnlocked = true; }).catch(() => {});
+            }
+        }
+
+        function stopSpeech() {
+            if (synth) synth.cancel();
+            audioQueue = [];
+            audioPlaying = false;
+            audioToken++;
+            ttsAudio.pause();
+        }
+
+        // --- คิวเล่นไฟล์เสียง (ใช้กับเสียง AI และเสียงออนไลน์) ---
+        function enqueueAudio(item, interrupt) {
+            if (interrupt) { audioQueue = []; audioPlaying = false; audioToken++; ttsAudio.pause(); }
+            audioQueue.push(item);
+            if (!audioPlaying) playNextAudio();
+        }
+
+        async function playNextAudio() {
+            const item = audioQueue.shift();
+            if (!item) { audioPlaying = false; return; }
+            audioPlaying = true;
+            const token = ++audioToken;
+            let url;
+            try {
+                url = await item.src;
+            } catch (e) {
+                if (token !== audioToken) return;
+                // เสียง AI ใช้ไม่ได้ (เน็ต/โควตา) → ใช้เสียงสำรองแทน ไม่ให้เงียบ
+                voiceStatus.textContent = 'เสียง AI ใช้ไม่ได้ชั่วคราว ⚠️ ใช้เสียงสำรองแทน';
+                if (synth && thaiVoices.length) speakWithSystem(item.text, thaiVoices[0], false);
+                else audioQueue.unshift({ text: item.text, src: Promise.resolve(googleTtsUrl(item.text)) });
+                playNextAudio();
+                return;
+            }
+            if (token !== audioToken) return; // ถูกตัดเสียงระหว่างรอโหลด
+            ttsAudio.src = url;
+            ttsAudio.play().catch(() => {
+                audioPlaying = false;
+                voiceStatus.textContent = 'เล่นเสียงไม่ได้ ⚠️ ลองเช็กอินเทอร์เน็ต หรือแตะ "ทดสอบเสียง" อีกครั้ง';
+            });
+        }
+        ttsAudio.onended = () => { if (audioPlaying) playNextAudio(); };
+        ttsAudio.onerror = () => { if (audioPlaying) playNextAudio(); };
+
+        function speakWithSystem(text, voice, interrupt) {
+            if (interrupt) synth.cancel();
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'th-TH';
+            if (voice) u.voice = voice;
+            u.rate = voiceRate;
+            u.pitch = voicePitch;
+            u.volume = 1.0;
+            // Chrome บางรุ่นจะไม่พูดถ้า speak ทันทีหลัง cancel
+            setTimeout(() => { synth.speak(u); synth.resume(); }, interrupt ? 80 : 0);
+        }
+
+        // พูดข้อความ: interrupt = true จะตัดเสียงที่พูดค้างอยู่ทิ้ง, false จะต่อคิว
+        function speak(text, interrupt = false) {
+            if (isMuted || !text) return;
+            if (isAiVoice()) { enqueueAudio({ text, src: fetchAiClip(text) }, interrupt); return; }
+            const systemVoice = thaiVoices.find(v => voiceKey(v) === selectedVoiceKey);
+            if (synth && systemVoice) { speakWithSystem(text, systemVoice, interrupt); return; }
+            enqueueAudio({ text, src: Promise.resolve(googleTtsUrl(text)) }, interrupt);
+        }
+
+        // ประโยคที่จะพูด: ออกแบบสำนวนให้เป็นธรรมชาติ และลดเครื่องหมายที่ทำให้สังเคราะห์เสียงกระตุก
+        function nameLine(name, withMission) {
+            return pick(withMission
+                ? [
+                    `ผู้โชคดีรอบนี้ ได้แก่คุณ ${name} ค่ะ`,
+                    `ตกที่ชื่อคุณ ${name} ค่ะ`,
+                    `รอบนี้เป็นตาของคุณ ${name} ค่ะ`,
+                    `ผลออกมาเป็นคุณ ${name} ค่ะ`
+                  ]
+                : [
+                    `ผู้โชคดีคือคุณ ${name} ค่ะ`,
+                    `รอบนี้ได้แก่คุณ ${name} นะคะ`,
+                    `ยินดีด้วยค่ะ คุณ ${name}`,
+                    `รอบนี้เป็นตาของคุณ ${name} ค่ะ`
+                  ]);
+        }
+
+        function missionLine(mission) {
+            return pick([
+                `ภารกิจที่ได้คือ ${mission} ค่ะ`,
+                `รอบนี้ต้อง ${mission} นะคะ`,
+                `จัดไปเลย ${mission} ค่ะ`,
+                `ภารกิจรอบนี้ ${mission} ค่ะ`
+            ]);
+        }
+
+        function announceName(name, withMission) {
+            const text = nameLine(name, withMission);
+            speak(text, true);
+        }
+
+        function announceMission(mission) {
+            const text = missionLine(mission);
+            speak(text, false);
+        }
+
+        document.getElementById('test-voice-btn').onclick = () => {
+            if (isMuted) { voiceStatus.textContent = 'ปิดเสียงอยู่ 🔇 กดปุ่มลำโพงมุมขวาบนเพื่อเปิด'; return; }
+            unlockSpeech();
+            voiceStatus.textContent = voiceStatusText();
+            speak('ยินดีด้วยค่ะ ผู้โชคดีคือคุณสมชาย ภารกิจที่ได้คือ หมดแก้ว ค่ะ', true);
+        };
 
         // 3. ระบบบันทึก
         document.getElementById('save-btn').onclick = async () => {
@@ -335,22 +628,26 @@
                 ctx.font = `900 ${fontSize}px Kanit`; ctx.shadowBlur = 15; ctx.shadowColor = "rgba(0,0,0,0.6)";
                 ctx.fillText(name.substring(0, 12), radius - 40, fontSize/3); ctx.restore();
             });
-            ctx.fillStyle = "#020617"; ctx.beginPath(); ctx.arc(centerX, centerY, 50, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#020617"; ctx.beginPath(); ctx.arc(centerX, centerY, 90, 0, Math.PI * 2); ctx.fill();
             ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 8; ctx.stroke();
+            // คำใบ้ตรงกลาง: แตะเพื่อหมุน
+            if (!isSpinning) {
+                ctx.fillStyle = "#ffffff"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                ctx.font = "900 52px Kanit"; ctx.fillText("แตะ!", centerX, centerY + 4);
+                ctx.textBaseline = "alphabetic";
+            }
         }
 
-        spinBtn.onclick = () => {
-            if (isSpinning || names.length === 0) return;
-            isSpinning = true; spinBtn.disabled = true;
+        // แตะวงล้อเพื่อหมุน (แทนปุ่ม Spin)
+        canvas.onclick = () => {
+            if (isSpinning) return;
+            if (names.length === 0) { window.switchTab('setup'); return; }
+            isSpinning = true; canvas.classList.add('spinning');
             
             if (audioCtx.state === 'suspended') audioCtx.resume();
             
-            // สำคัญ: "ปลุก" ระบบเสียงพูดทันทีที่คลิก (เบราว์เซอร์จะยอมจำนน)
-            if (!isMuted && window.speechSynthesis) {
-                window.speechSynthesis.cancel();
-                const wakeUp = new SpeechSynthesisUtterance("");
-                window.speechSynthesis.speak(wakeUp);
-            }
+            // สำคัญ: "ปลุก" ระบบเสียงพูดทันทีที่แตะ (มือถือต้องเริ่มจากการแตะของผู้ใช้)
+            unlockSpeech();
 
             const duration = 5000; const startRot = rotation;
             const extra = 15 + Math.random() * 10; const targetRot = startRot + (extra * Math.PI * 2);
@@ -373,7 +670,7 @@
                 draw();
                 if (progress < 1) requestAnimationFrame(animate);
                 else {
-                    isSpinning = false; spinBtn.disabled = false;
+                    isSpinning = false; canvas.classList.remove('spinning'); draw();
                     const normalized = rotation % (Math.PI * 2);
                     let idx = Math.floor(( (Math.PI * 1.5) - normalized ) / ((Math.PI * 2) / names.length)) % names.length;
                     if (idx < 0) idx += names.length;
@@ -404,9 +701,11 @@
             missionBox.classList.toggle('hidden', !useMission);
             setTimeout(() => document.getElementById('result-modal').classList.add('opacity-100'), 10);
 
+            // ประกาศชื่อทันทีที่วงล้อหยุด
+            announceName(name, useMission);
+
             // โหมดไม่ใช้ภารกิจ: สุ่มชื่ออย่างเดียว
             if (!useMission) {
-                speakThaiName(name);
                 addHistory(name, null);
                 removeWinnerIfNeeded(index);
                 return;
@@ -418,8 +717,8 @@
                 const finalM = missions[Math.floor(Math.random() * missions.length)];
                 document.getElementById('winner-mission').textContent = finalM;
                 
-                // ประกาศเสียงพากย์น่ารักๆ หลังหยุดหมุน
-                speakThaiMission(finalM);
+                // ประกาศภารกิจต่อจากชื่อ (ต่อคิว ไม่ตัดเสียงชื่อ)
+                announceMission(finalM);
 
                 addHistory(name, finalM);
                 removeWinnerIfNeeded(index);
@@ -428,7 +727,7 @@
 
         function closeModal() {
             const m = document.getElementById('result-modal'); m.classList.remove('opacity-100');
-            setTimeout(() => { m.classList.add('hidden'); window.speechSynthesis.cancel(); }, 300);
+            setTimeout(() => { m.classList.add('hidden'); stopSpeech(); }, 300);
         }
 
         document.getElementById('restore-btn').onclick = async () => {
@@ -467,6 +766,7 @@
         const initialLoad = localStorage.getItem('party_wheel_backup');
         if (initialLoad) { namesInput.value = JSON.parse(initialLoad).join('\n'); }
         updateWheel();
+        if (document.fonts) document.fonts.ready.then(() => draw());
         startFirebase();
     </script>
 </body>
