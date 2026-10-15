@@ -122,6 +122,11 @@
                 </button>
 
                 <div class="flex items-center justify-between px-6 py-3 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-sm">
+                    <span class="text-sm font-bold text-slate-300">🍺 ใช้ภารกิจ</span>
+                    <input type="checkbox" id="mission-mode" class="w-6 h-6 accent-amber-500 rounded-lg" checked>
+                </div>
+
+                <div class="flex items-center justify-between px-6 py-3 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-sm">
                     <span class="text-sm font-bold text-slate-300">ตัดชื่อคนโดนออก</span>
                     <input type="checkbox" id="remove-mode" class="w-6 h-6 accent-rose-500 rounded-lg">
                 </div>
@@ -205,6 +210,11 @@
         const soundOnIcon = document.getElementById('sound-icon-on');
         const soundOffIcon = document.getElementById('sound-icon-off');
         const saveFeedback = document.getElementById('save-feedback');
+        const missionModeInput = document.getElementById('mission-mode');
+
+        // จำค่าเปิด/ปิดภารกิจไว้ในเครื่อง
+        missionModeInput.checked = localStorage.getItem('party_wheel_mission_mode') !== 'off';
+        missionModeInput.onchange = () => localStorage.setItem('party_wheel_mission_mode', missionModeInput.checked ? 'on' : 'off');
 
         let names = [];
         let rotation = 0;
@@ -259,6 +269,24 @@
             utterance.rate = 1.1; 
             utterance.volume = 1.0;
 
+            if (thaiVoice) utterance.voice = thaiVoice;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function speakThaiName(name) {
+            if (isMuted || !window.speechSynthesis) return;
+            window.speechSynthesis.cancel();
+            const intros = [
+                `ว้าววว! รอบนี้ได้ ${name} ค่ะ`,
+                `อุ๊ย! ${name} โดนแล้วค่ะ`,
+                `เย้! ผู้โชคดีคือ ${name} ค่ะ`,
+                `ตาของ ${name} แล้วนะคะ`
+            ];
+            const utterance = new SpeechSynthesisUtterance(intros[Math.floor(Math.random() * intros.length)]);
+            utterance.lang = 'th-TH';
+            utterance.pitch = 1.6;
+            utterance.rate = 1.1;
+            utterance.volume = 1.0;
             if (thaiVoice) utterance.voice = thaiVoice;
             window.speechSynthesis.speak(utterance);
         }
@@ -355,10 +383,35 @@
             requestAnimationFrame(animate);
         };
 
+        function addHistory(name, mission) {
+            const div = document.createElement('div'); div.className = "bg-white/5 p-4 rounded-2xl border border-white/5 flex justify-between items-center";
+            const missionHtml = mission ? `<div class="text-xs text-slate-400">${mission}</div>` : '';
+            div.innerHTML = `<div><div class="text-rose-400 font-bold">${name}</div>${missionHtml}</div><div class="text-[10px] text-slate-600">${new Date().toLocaleTimeString('th-TH')}</div>`;
+            const list = document.getElementById('history-list'); if (list.querySelector('p')) list.innerHTML = '';
+            list.prepend(div);
+        }
+
+        function removeWinnerIfNeeded(index) {
+            if (document.getElementById('remove-mode').checked) { names.splice(index, 1); namesInput.value = names.join('\n'); updateWheel(); }
+        }
+
         function showResult(name, index) {
             document.getElementById('winner-name').textContent = name;
             document.getElementById('result-modal').classList.remove('hidden');
+            const missionBox = document.getElementById('mission-box');
             const missions = missionsInput.value.split('\n').filter(m => m.trim());
+            const useMission = missionModeInput.checked && missions.length > 0;
+            missionBox.classList.toggle('hidden', !useMission);
+            setTimeout(() => document.getElementById('result-modal').classList.add('opacity-100'), 10);
+
+            // โหมดไม่ใช้ภารกิจ: สุ่มชื่ออย่างเดียว
+            if (!useMission) {
+                speakThaiName(name);
+                addHistory(name, null);
+                removeWinnerIfNeeded(index);
+                return;
+            }
+
             let mIdx = 0; const mInt = setInterval(() => { document.getElementById('winner-mission').textContent = missions[mIdx++ % missions.length]; }, 80);
             setTimeout(() => {
                 clearInterval(mInt);
@@ -368,13 +421,9 @@
                 // ประกาศเสียงพากย์น่ารักๆ หลังหยุดหมุน
                 speakThaiMission(finalM);
 
-                const div = document.createElement('div'); div.className = "bg-white/5 p-4 rounded-2xl border border-white/5 flex justify-between items-center";
-                div.innerHTML = `<div><div class="text-rose-400 font-bold">${name}</div><div class="text-xs text-slate-400">${finalM}</div></div><div class="text-[10px] text-slate-600">${new Date().toLocaleTimeString('th-TH')}</div>`;
-                const list = document.getElementById('history-list'); if (list.querySelector('p')) list.innerHTML = '';
-                list.prepend(div);
-                if (document.getElementById('remove-mode').checked) { names.splice(index, 1); namesInput.value = names.join('\n'); updateWheel(); }
+                addHistory(name, finalM);
+                removeWinnerIfNeeded(index);
             }, 1200);
-            setTimeout(() => document.getElementById('result-modal').classList.add('opacity-100'), 10);
         }
 
         function closeModal() {
