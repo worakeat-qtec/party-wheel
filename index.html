@@ -40,17 +40,14 @@
         #wheel-canvas.spinning:active { transform: none; }
         .pointer-top {
             position: absolute;
-            top: -55px;
+            top: -62px;
             left: 50%;
-            transform-origin: 50% 15px;
-            transform: translateX(-50%) rotate(180deg);
+            transform-origin: 50% 12px;
+            transform: translateX(-50%) rotate(0deg);
             z-index: 50;
-            filter: drop-shadow(0 -4px 8px rgba(0,0,0,0.5));
+            filter: drop-shadow(0 8px 16px rgba(0,0,0,0.75)) drop-shadow(0 2px 8px rgba(244,63,94,0.4));
             pointer-events: none;
-            transition: transform 0.04s cubic-bezier(0.1, 0.9, 0.2, 1);
-        }
-        .pointer-top.tick {
-            transform: translateX(-50%) rotate(196deg) scale(1.08);
+            will-change: transform;
         }
         .tab-content {
             display: none;
@@ -158,15 +155,56 @@
         <div id="tab-wheel" class="tab-content active items-center justify-center gap-6 py-4">
             <div id="wheel-container">
                 <div id="pointer-bottle" class="pointer-top">
-                    <!-- SVG Green Bottle Pointer -->
-                    <svg width="55" height="100" viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M30 60 C30 50 40 45 50 45 C60 45 70 50 70 60 L75 180 C75 190 65 195 50 195 C35 195 25 190 25 180 Z" fill="#2d5a27" stroke="#1a3a16" stroke-width="2"/>
-                        <rect x="42" y="10" width="16" height="40" rx="2" fill="#2d5a27" stroke="#1a3a16" stroke-width="2"/>
-                        <rect x="40" y="5" width="20" height="10" rx="1" fill="#c0a060" stroke="#8a7040" stroke-width="1"/>
-                        <rect x="30" y="100" width="40" height="50" fill="#f0f0f0" rx="2"/>
-                        <rect x="35" y="110" width="30" height="5" fill="#2d5a27" rx="1"/>
-                        <rect x="35" y="120" width="20" height="3" fill="#888" rx="1"/>
-                        <path d="M35 70 Q40 60 50 60" fill="none" stroke="white" stroke-width="2" opacity="0.3"/>
+                    <!-- Luxury Party Bottle with Sharp Golden Arrow Pointer -->
+                    <svg width="56" height="100" viewBox="0 0 60 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#fff8cc" />
+                                <stop offset="25%" stop-color="#fbbf24" />
+                                <stop offset="50%" stop-color="#f59e0b" />
+                                <stop offset="80%" stop-color="#d97706" />
+                                <stop offset="100%" stop-color="#78350f" />
+                            </linearGradient>
+                            <linearGradient id="glassGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#022c22" />
+                                <stop offset="18%" stop-color="#047857" />
+                                <stop offset="50%" stop-color="#10b981" />
+                                <stop offset="82%" stop-color="#059669" />
+                                <stop offset="100%" stop-color="#022c22" />
+                            </linearGradient>
+                            <linearGradient id="labelGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stop-color="#1e1b4b" />
+                                <stop offset="100%" stop-color="#020617" />
+                            </linearGradient>
+                            <linearGradient id="needleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#ffffff" />
+                                <stop offset="25%" stop-color="#fef08a" />
+                                <stop offset="60%" stop-color="#eab308" />
+                                <stop offset="100%" stop-color="#b45309" />
+                            </linearGradient>
+                        </defs>
+                        <!-- Bottle Body (Tapered down towards wheel) -->
+                        <path d="M 17 18 C 17 12 43 12 43 18 L 44 48 C 44 60 36 65 35 72 L 25 72 C 24 65 16 60 16 48 Z" 
+                              fill="url(#glassGrad)" stroke="url(#goldGrad)" stroke-width="1.6" stroke-linejoin="round" />
+                        <!-- Glossy Highlights -->
+                        <path d="M 20 20 L 19 46 C 19 56 24 61 26 69" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" opacity="0.45" />
+                        <path d="M 40 22 L 41 46 C 41 54 37 59 36 64" stroke="#ffffff" stroke-width="1" stroke-linecap="round" opacity="0.2" />
+                        <!-- Party Bottle Label -->
+                        <rect x="19" y="30" width="22" height="20" rx="3" fill="url(#labelGrad)" stroke="url(#goldGrad)" stroke-width="1" />
+                        <path d="M 30 34 L 31 37.2 L 34.5 37.2 L 31.8 39.2 L 32.8 42.4 L 30 40.4 L 27.2 42.4 L 28.2 39.2 L 25.5 37.2 L 29 37.2 Z" fill="url(#goldGrad)" />
+                        <text x="30" y="47.5" font-size="4.2" font-weight="900" font-family="'Kanit', sans-serif" fill="#ffffff" text-anchor="middle" letter-spacing="0.8">PARTY</text>
+                        <!-- Gold Foil Neck -->
+                        <rect x="24" y="68" width="12" height="11" rx="1.5" fill="url(#goldGrad)" stroke="#ffffff" stroke-width="0.8" />
+                        <line x1="24" y1="72" x2="36" y2="72" stroke="#78350f" stroke-width="0.8" opacity="0.6" />
+                        <line x1="24" y1="76" x2="36" y2="76" stroke="#78350f" stroke-width="0.8" opacity="0.6" />
+                        <!-- Pivot Anchor Pin -->
+                        <circle cx="30" cy="10" r="9" fill="url(#goldGrad)" stroke="#ffffff" stroke-width="1.2" />
+                        <circle cx="30" cy="10" r="4.5" fill="#020617" stroke="url(#goldGrad)" stroke-width="1.2" />
+                        <circle cx="30" cy="10" r="2" fill="#f43f5e" />
+                        <!-- Sharp Golden Pointer Arrow Tip (ชี้ตรงเข้าสู่เนื้อวงล้อชัดเจน) -->
+                        <polygon points="18,79 42,79 30,97" fill="url(#needleGrad)" stroke="#ffffff" stroke-width="1.4" stroke-linejoin="round" />
+                        <line x1="30" y1="79" x2="30" y2="95" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round" />
+                        <circle cx="30" cy="81" r="2" fill="#f43f5e" stroke="#ffffff" stroke-width="0.6" />
                     </svg>
                 </div>
                 <canvas id="wheel-canvas" width="1000" height="1000" role="button" aria-label="แตะเพื่อหมุนวงล้อ"></canvas>
@@ -683,10 +721,42 @@
             clickOsc.stop(now + 0.02);
         }
 
-        function animatePointerBounce() {
+        let pointerAngle = 0;
+        let pointerVelocity = 0;
+
+        function triggerPointerFlick() {
+            // ดีดเข็มชี้ไปตามทิศทางการหมุนของวงล้อ (+26 องศา) เด้งดึ๋งสมจริง
+            pointerVelocity = 26;
+        }
+
+        function updatePointerPhysics() {
             if (!pointerEl) return;
-            pointerEl.classList.add('tick');
-            setTimeout(() => pointerEl.classList.remove('tick'), 40);
+            // สปริงจำลองแรงดีดของเข็มชี้จริง (Spring-Damper Physics)
+            const spring = 0.36;
+            const damping = 0.70;
+            pointerVelocity += -spring * pointerAngle;
+            pointerVelocity *= damping;
+            pointerAngle += pointerVelocity;
+
+            if (pointerAngle > 34) pointerAngle = 34;
+            if (pointerAngle < -14) pointerAngle = -14;
+
+            pointerEl.style.transform = `translateX(-50%) rotate(${pointerAngle}deg)`;
+        }
+
+        function settlePointerPhysics() {
+            const settle = () => {
+                if (isSpinning) return;
+                updatePointerPhysics();
+                if (Math.abs(pointerAngle) > 0.1 || Math.abs(pointerVelocity) > 0.1) {
+                    requestAnimationFrame(settle);
+                } else {
+                    pointerAngle = 0;
+                    pointerVelocity = 0;
+                    if (pointerEl) pointerEl.style.transform = 'translateX(-50%) rotate(0deg)';
+                }
+            };
+            requestAnimationFrame(settle);
         }
 
         // เสียงชัยชนะ Ta-da! (Fanfare) ตอนวงล้อหยุด เพื่อเปิดตัวผู้ชนะ
@@ -738,14 +808,16 @@
                 const sliceAngle = (Math.PI * 2) / names.length;
                 if (Math.floor(rotation / (sliceAngle / 1)) !== lastTick) {
                     playWheelTick(progress);
-                    animatePointerBounce();
+                    triggerPointerFlick();
                     lastTick = Math.floor(rotation / (sliceAngle / 1));
                 }
+                updatePointerPhysics();
                 draw();
                 if (progress < 1) requestAnimationFrame(animate);
                 else {
                     isSpinning = false; canvas.classList.remove('spinning'); draw();
                     playWinSound();
+                    settlePointerPhysics();
                     const normalized = rotation % (Math.PI * 2);
                     let idx = Math.floor(( (Math.PI * 1.5) - normalized ) / ((Math.PI * 2) / names.length)) % names.length;
                     if (idx < 0) idx += names.length;
